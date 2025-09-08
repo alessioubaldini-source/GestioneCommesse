@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestionale Commesse</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="bg-gray-100 min-h-screen text-gray-800">
+    <!-- Header -->
+    <header class="sticky-header bg-white shadow-md border-b z-40">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center gap-3">
+            <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M20.25 14.15v4.07a2.25 2.25 0 01-2.25 2.25H5.998a2.25 2.25 0 01-2.25-2.25v-4.07a2.25 2.25 0 01.52-1.495L4.5 9.55a2.25 2.25 0 011.495-2.002h9.01a2.25 2.25 0 011.495 2.002l.23 2.105a2.25 2.25 0 01.52 1.495z"
+                />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9.55v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A3.375 3.375 0 007.5 6.925v2.625" />
+              </svg>
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900">Gestionale Commesse</h1>
+          </div>
+
+          <!-- Search and Export -->
+          <div class="flex items-center space-x-4">
+            <div class="relative">
+              <input type="text" id="global-search" placeholder="Cerca ovunque..." class="search-box pl-10 pr-4 py-2 border rounded-lg w-64 focus:ring-2 focus:ring-blue-500" />
+              <svg class="absolute left-3 top-3 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <button id="export-excel" class="btn-primary bg-green-600 hover:bg-green-700 flex items-center gap-2">
+              Esporta
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <nav class="flex space-x-8">
+          <button id="tab-dashboard" class="tab-btn border-blue-500 text-blue-600 pb-3 px-1 border-b-2 font-medium text-sm">Dashboard</button>
+          <button id="tab-gestione" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 pb-3 px-1 border-b-2 font-medium text-sm">Gestione Commesse</button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+      <!-- Dashboard Tab -->
+      <div id="dashboard-content" class="tab-content">
+        <!-- Filtri Dashboard -->
+        <div class="bg-white p-4 rounded-lg shadow border mb-6 filter-panel">
+          <div class="flex flex-wrap items-center gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
+              <select id="period-filter" class="border rounded-lg px-3 py-2 text-sm">
+                <option value="all">Tutti i periodi</option>
+                <option value="current-month">Mese corrente</option>
+                <option value="current-quarter">Trimestre corrente</option>
+                <option value="current-year">Anno corrente</option>
+                <option value="last-3-months">Ultimi 3 mesi</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+              <select id="client-filter" class="border rounded-lg px-3 py-2 text-sm">
+                <option value="all">Tutti i clienti</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Stato</label>
+              <select id="status-filter" class="border rounded-lg px-3 py-2 text-sm">
+                <option value="all">Tutti gli stati</option>
+                <option value="Attivo">Attivo</option>
+                <option value="Pianificazione">Pianificazione</option>
+                <option value="Completato">Completato</option>
+                <option value="Sospeso">Sospeso</option>
+              </select>
+            </div>
+            <div class="flex-1"></div>
+            <button id="reset-filters" class="text-sm font-medium text-blue-600 hover:text-blue-800">Reset Filtri</button>
+          </div>
+        </div>
+
+        <!-- KPI Cards Enhanced -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div class="kpi-card bg-green-50 p-6 rounded-lg border border-green-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-green-600 text-sm font-medium">Ricavi Totali</p>
+                <p id="total-ricavi" class="text-2xl font-bold text-green-900">€0</p>
+                <p id="ricavi-trend" class="text-xs text-green-600 mt-1"></p>
+              </div>
+              <div class="bg-green-100 text-green-600 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 7.756a4.5 4.5 0 100 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card bg-red-50 p-6 rounded-lg border border-red-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-red-600 text-sm font-medium">Costi Totali</p>
+                <p id="total-costi" class="text-2xl font-bold text-red-900">€0</p>
+                <p id="costi-trend" class="text-xs text-red-600 mt-1"></p>
+              </div>
+              <div class="bg-red-100 text-red-600 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V13.5zm0 2.25h.008v.008H8.25v-.008zm0 2.25h.008v.008H8.25V18zm2.498-6.75h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V13.5zm0 2.25h.007v.008h-.007v-.008zm0 2.25h.007v.008h-.007V18zm2.504-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5zm0 2.25h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V18zm2.498-6.75h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V13.5z"
+                  />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l7.5-7.5 7.5 7.5" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div id="margine-kpi-card" class="kpi-card bg-blue-50 p-6 rounded-lg border border-blue-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-blue-600 text-sm font-medium">Margine Medio</p>
+                <p id="margine-medio" class="text-2xl font-bold text-blue-900">0%</p>
+                <p id="margine-trend" class="text-xs text-blue-600 mt-1"></p>
+              </div>
+              <div class="bg-blue-100 text-blue-600 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-.604m3.75.604l.604 3.75" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card bg-purple-50 p-6 rounded-lg border border-purple-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-purple-600 text-sm font-medium">Commesse Attive</p>
+                <p id="commesse-attive" class="text-2xl font-bold text-purple-900">0</p>
+                <p id="fatturato-mensile" class="text-xs text-purple-600 mt-1">Fatturato mese: €0</p>
+              </div>
+              <div class="bg-purple-100 text-purple-600 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Commesse da Monitorare -->
+        <div class="bg-white p-6 rounded-lg shadow border mb-6">
+          <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-yellow-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            Commesse da Monitorare
+          </h3>
+          <div id="commesse-monitorate-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Grafici Enhanced -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white p-6 rounded-lg shadow border">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold">Trend Mensili Ricavi vs Costi</h3>
+              <button class="legend-toggle" title="Mostra/Nascondi Legenda">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+              </button>
+            </div>
+            <canvas id="trendChart" width="400" height="300"></canvas>
+            <div class="legend-content hidden mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
+              <p><strong>Ricavi:</strong> Somma degli importi delle fatture per mese di competenza.</p>
+              <p><strong>Costi:</strong> Somma dei costi consuntivi registrati per mese.</p>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow border">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold">Budget vs Consuntivo</h3>
+              <button class="legend-toggle" title="Mostra/Nascondi Legenda">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+              </button>
+            </div>
+            <canvas id="budgetVsConsuntivoChart" width="400" height="300"></canvas>
+            <div class="legend-content hidden mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
+              <p><strong>Budget:</strong> Somma dei valori di tutti i budget per ogni commessa.</p>
+              <p><strong>Consuntivo:</strong> Somma di tutti i costi consuntivi registrati per ogni commessa.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white p-6 rounded-lg shadow border">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold">Ricavi per Cliente</h3>
+              <button class="legend-toggle" title="Mostra/Nascondi Legenda">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+              </button>
+            </div>
+            <canvas id="clientChart" width="400" height="300"></canvas>
+            <div class="legend-content hidden mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
+              <p>Mostra la distribuzione dei ricavi totali (somma delle fatture) per ogni cliente.</p>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow border">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold">Distribuzione Margini</h3>
+              <button class="legend-toggle" title="Mostra/Nascondi Legenda">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+              </button>
+            </div>
+            <canvas id="marginiChart" width="400" height="300"></canvas>
+            <div class="legend-content hidden mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
+              <p>Raggruppa le commesse in base alla loro percentuale di margine calcolata come (Ricavi - Costi) / Ricavi.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabella Commesse con filtri -->
+        <div class="bg-white p-6 rounded-lg shadow border">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962A3.75 3.75 0 0112 15v-2.25L8.625 9.75M12 15v-2.25a3.75 3.75 0 00-3.75-3.75H8.25m9-6.75h-7.5a3.75 3.75 0 00-3.75 3.75v7.5a3.75 3.75 0 003.75 3.75h7.5a3.75 3.75 0 003.75-3.75v-7.5a3.75 3.75 0 00-3.75-3.75z"
+                />
+              </svg>
+              Gestione Commesse
+            </h3>
+            <div class="flex items-center gap-4">
+              <div class="relative">
+                <input type="text" id="commesse-search" placeholder="Cerca commesse..." class="pl-8 pr-4 py-2 border rounded-lg text-sm" />
+                <svg class="absolute left-2 top-3 h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <select id="sort-commesse" class="border rounded-lg px-3 py-2 text-sm">
+                <option value="nome">Ordina per Nome</option>
+                <option value="cliente">Ordina per Cliente</option>
+                <option value="ricavi">Ordina per Ricavi</option>
+                <option value="margine">Ordina per Margine</option>
+                <option value="data">Ordina per Data</option>
+              </select>
+              <button data-modal-type="commessa" class="btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+                Nuova Commessa
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Nome</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Cliente</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Data Inizio</th>
+                  <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Stato</th>
+                  <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Ricavi</th>
+                  <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Margine %</th>
+                  <th class="px-4 py-3 text-center text-sm font-medium text-gray-900">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="commesse-table" class="divide-y divide-gray-200">
+                <!-- Dati inseriti via JS -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination Controls -->
+          <div id="commesse-pagination" class="flex justify-center items-center mt-6 space-x-2">
+            <!-- Controlli inseriti via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestione Tab -->
+      <div id="gestione-content" class="tab-content hidden">
+        <!-- Header Commessa Migliorato -->
+        <div class="commessa-header text-white p-6 mb-6 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h3 class="text-xl font-bold mb-4">Gestione Commessa</h3>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-4 items-end">
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-white opacity-90 mb-1">Commessa</label>
+                  <select id="commessa-select" class="w-full border-0 rounded-lg px-3 py-2 text-gray-900 shadow-lg">
+                    <!-- Opzioni inserite via JS -->
+                  </select>
+                </div>
+                <div id="commessa-info">
+                  <p class="text-sm opacity-90">Cliente: <span id="selected-cliente" class="font-semibold text-lg">-</span></p>
+                  <p class="text-sm opacity-90 mt-2">Stato: <span id="selected-stato" class="font-semibold text-lg">-</span></p>
+                </div>
+                <div id="commessa-kpi">
+                  <p class="text-sm opacity-90">Ricavi Fatturati: <span id="selected-budget" class="font-bold text-xl">€0</span></p>
+                  <p class="text-sm opacity-90 mt-2">Margine Reale: <span id="selected-margine" class="font-bold text-xl">0%</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-tabs -->
+        <div class="bg-white rounded-lg shadow border">
+          <div class="border-b">
+            <nav class="flex space-x-8 px-6">
+              <button id="sub-budget" class="sub-tab-btn border-blue-500 text-blue-600 py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                  />
+                </svg>
+                Budget
+              </button>
+              <button id="sub-ordini" class="sub-tab-btn border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                Ordini
+              </button>
+              <button id="sub-fatture" class="sub-tab-btn border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z"
+                  />
+                </svg>
+                Fatture
+              </button>
+              <button id="sub-margini" class="sub-tab-btn border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-.604m3.75.604l.604 3.75" />
+                </svg>
+                Margini
+              </button>
+            </nav>
+          </div>
+
+          <div class="p-6">
+            <!-- Budget Section -->
+            <div id="budget-section" class="sub-content">
+              <div class="flex justify-between items-center mb-6">
+                <h4 class="text-lg font-semibold">Budget</h4>
+                <button data-modal-type="budget" class="btn-primary bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2">
+                  Nuovo Budget
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                </button>
+              </div>
+
+              <div class="bg-white rounded-lg shadow border">
+                <div class="overflow-x-auto">
+                  <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                      <tr>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">ID Budget</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Mese</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Figura</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Tariffa</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Giorni</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Importo</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium text-gray-900">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody id="budget-table" class="divide-y divide-gray-200"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ordini Section -->
+            <div id="ordini-section" class="sub-content hidden">
+              <div class="flex justify-between items-center mb-6">
+                <h4 class="text-lg font-semibold">Ordini</h4>
+                <button data-modal-type="ordine" class="btn-primary bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2">
+                  Nuovo Ordine
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                </button>
+              </div>
+
+              <div class="bg-white rounded-lg shadow border">
+                <div class="overflow-x-auto">
+                  <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                      <tr>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Numero Ordine</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Data</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Importo</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium text-gray-900">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ordini-table" class="divide-y divide-gray-200"></tbody>
+                    <tfoot class="bg-gray-50 border-t">
+                      <tr>
+                        <td colspan="2" class="px-4 py-3 text-sm font-medium text-right">Totale Ordini:</td>
+                        <td id="ordini-total" class="px-4 py-3 text-sm font-bold text-right">€0</td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fatture Section -->
+            <div id="fatture-section" class="sub-content hidden">
+              <div class="flex justify-between items-center mb-6">
+                <h4 class="text-lg font-semibold">Fatture</h4>
+                <button data-modal-type="fattura" class="btn-primary bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2">
+                  Nuova Fattura
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                </button>
+              </div>
+
+              <div class="bg-white rounded-lg shadow border">
+                <div class="overflow-x-auto">
+                  <table class="w-full">
+                    <thead class="bg-gray-50 border-b">
+                      <tr>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Mese</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Data Invio</th>
+                        <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Importo</th>
+                        <th class="px-4 py-3 text-center text-sm font-medium text-gray-900">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody id="fatture-table" class="divide-y divide-gray-200"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
+                <h4 class="font-medium text-blue-900 mb-3">Riepilogo Fatturazione</h4>
+                <div class="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span class="text-blue-700">Montante (Fatture):</span>
+                    <span id="montante-fatture" class="font-bold ml-2">€0</span>
+                  </div>
+                  <div>
+                    <span class="text-blue-700">Totale Ordini:</span>
+                    <span id="totale-ordini-fatture" class="font-bold ml-2">€0</span>
+                  </div>
+                  <div>
+                    <span class="text-blue-700">Residuo:</span>
+                    <span id="residuo-fatture" class="font-bold ml-2">€0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Margini Section -->
+            <div id="margini-section" class="sub-content hidden">
+              <div class="flex justify-between items-center mb-6">
+                <h4 class="text-lg font-semibold">Forecast Margini</h4>
+                <div class="flex items-center gap-4">
+                  <button class="legend-toggle" title="Mostra/Nascondi Legenda Calcoli">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                  </button>
+                  <button data-modal-type="margine" class="btn-primary bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2">
+                    Nuovo Forecast
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow border">
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs">
+                    <thead class="bg-gray-50 border-b">
+                      <tr>
+                        <th class="px-2 py-3 text-left font-medium text-gray-900">Mese</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons.</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons.</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo/HH</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Cons.</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Margine %</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Budget Tot</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Budget (EAC)</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900 bg-green-50">Costo ETC</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900 bg-green-50">Ore ETC</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">% Avanz.</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Maturato</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">ETC Revenue</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody id="margini-table" class="divide-y divide-gray-200"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Legend for Margins Table -->
+              <div class="legend-content hidden mt-4 p-4 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
+                <h5 class="font-bold text-sm mb-2">Legenda Calcoli Tabella Margini</h5>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <p><strong>Costo Cons.:</strong> Costo totale registrato per il mese.</p>
+                  <p><strong>HH Cons.:</strong> Ore totali registrate per il mese.</p>
+                  <p><strong>Costo/HH:</strong> Costo medio orario (Costo Cons. / HH Cons.).</p>
+                  <p><strong>Ricavo Cons.:</strong> Totale fatturato per la commessa fino ad oggi.</p>
+                  <p><strong>Margine %:</strong> (Ricavo Cons. - Costo Cons.) / Ricavo Cons.</p>
+                  <p><strong>Ricavo Budget Tot:</strong> Valore dell'ultimo budget approvato per la commessa.</p>
+                  <p><strong>Costo Budget (EAC):</strong> Stima del costo totale a finire (Estimate At Completion). Calcolato come: Ricavo Budget Tot * (1 - Margine %).</p>
+                  <p><strong>Costo ETC:</strong> Stima del costo rimanente (Estimate To Complete). Calcolato come: EAC - Costo Cons.</p>
+                  <p><strong>Ore ETC:</strong> Stima delle ore rimanenti. Calcolato come: Costo ETC / Costo/HH.</p>
+                  <p><strong>% Avanz.:</strong> Percentuale di avanzamento costi. Calcolato come: Costo Cons. / EAC.</p>
+                  <p><strong>Ricavo Maturato:</strong> Valore del ricavo maturato in base all'avanzamento. Calcolato come: Ricavo Budget Tot * % Avanz.</p>
+                  <p><strong>ETC Revenue:</strong> Ricavo rimanente da maturare. Calcolato come: Ricavo Budget Tot - Ricavo Maturato.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="modal-title" class="text-lg font-semibold">Nuovo Elemento</h3>
+          <button class="close-modal-btn text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+
+        <form id="modal-form">
+          <div id="form-fields">
+            <!-- Campi inseriti dinamicamente -->
+          </div>
+
+          <div class="flex gap-3 mt-6">
+            <button type="button" class="close-modal-btn flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Annulla</button>
+            <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salva</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+    <!-- Spinner Overlay -->
+    <div id="spinner-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+      <div class="spinner"></div>
+    </div>
+
+    <script src="js/main.js" type="module"></script>
+  </body>
+</html>
