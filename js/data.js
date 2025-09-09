@@ -161,41 +161,50 @@ export function saveForm(formData) {
         state.selectedCommessa = newCommessa.id;
         break;
       case 'budget':
-        const budgetMasterSelect = document.getElementById('budget-master-select');
-        const selectedMasterId = budgetMasterSelect ? budgetMasterSelect.value : null;
-
-        if (selectedMasterId === 'new') {
+        const budgetType = formData.budgetType;
+        if (budgetType === 'total') {
+          // Create a new budget master with a total amount
           const newBudgetMaster = {
             id: generateId(state.dati.budgetMaster || []),
             commessaId: selectedCommessa,
             budgetId: formData.budgetId,
             meseCompetenza: formData.meseCompetenza,
+            type: 'total',
+            importo: parseFloat(formData.importo),
           };
-
           if (!state.dati.budgetMaster) state.dati.budgetMaster = [];
           state.dati.budgetMaster.push(newBudgetMaster);
-
-          const newBudgetDetail = {
-            id: generateId(state.dati.budget || []),
-            budgetMasterId: newBudgetMaster.id,
-            figura: formData.figura,
-            tariffa: parseFloat(formData.tariffa),
-            giorni: parseInt(formData.giorni),
-          };
-
-          if (!state.dati.budget) state.dati.budget = [];
-          state.dati.budget.push(newBudgetDetail);
         } else {
-          const newBudgetDetail = {
-            id: generateId(state.dati.budget || []),
-            budgetMasterId: parseInt(selectedMasterId),
-            figura: formData.figura,
-            tariffa: parseFloat(formData.tariffa),
-            giorni: parseInt(formData.giorni),
-          };
+          // Create a detailed budget
+          const budgetMasterSelect = document.getElementById('budget-master-select');
+          const selectedMasterId = budgetMasterSelect ? budgetMasterSelect.value : null;
 
-          if (!state.dati.budget) state.dati.budget = [];
-          state.dati.budget.push(newBudgetDetail);
+          if (selectedMasterId === 'new') {
+            const newBudgetMaster = {
+              id: generateId(state.dati.budgetMaster || []),
+              commessaId: selectedCommessa,
+              budgetId: formData.budgetId,
+              meseCompetenza: formData.meseCompetenza,
+              type: 'detail',
+              importo: null,
+            };
+            if (!state.dati.budgetMaster) state.dati.budgetMaster = [];
+            state.dati.budgetMaster.push(newBudgetMaster);
+
+            const newBudgetDetail = { id: generateId(state.dati.budget || []), budgetMasterId: newBudgetMaster.id, figura: formData.figura, tariffa: parseFloat(formData.tariffa), giorni: parseInt(formData.giorni) };
+            if (!state.dati.budget) state.dati.budget = [];
+            state.dati.budget.push(newBudgetDetail);
+          } else {
+            const newBudgetDetail = {
+              id: generateId(state.dati.budget || []),
+              budgetMasterId: parseInt(selectedMasterId),
+              figura: formData.figura,
+              tariffa: parseFloat(formData.tariffa),
+              giorni: parseInt(formData.giorni),
+            };
+            if (!state.dati.budget) state.dati.budget = [];
+            state.dati.budget.push(newBudgetDetail);
+          }
         }
         break;
       case 'ordine':
@@ -329,8 +338,8 @@ function getDefaultData() {
       { id: 3, nome: 'Sistema Beta', cliente: 'Cliente C', dataInizio: '2024-06-01', stato: 'Attivo' },
     ],
     budgetMaster: [
-      { id: 1, commessaId: 2, budgetId: 'BUD001', meseCompetenza: '2024-12' },
-      { id: 2, commessaId: 3, budgetId: 'BUD002', meseCompetenza: '2024-06' },
+      { id: 1, commessaId: 2, budgetId: 'BUD001', meseCompetenza: '2024-12', type: 'detail', importo: null },
+      { id: 2, commessaId: 3, budgetId: 'BUD002', meseCompetenza: '2024-06', type: 'detail', importo: null },
     ],
     budget: [
       { id: 1, budgetMasterId: 1, figura: 'Senior Manager', tariffa: 700, giorni: 10 },

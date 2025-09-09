@@ -15,6 +15,7 @@ function hexToRgba(hex, alpha) {
 
 export function updateCharts() {
   const filteredCommesse = calcService.getFilteredCommesse();
+  const { startDate, endDate } = calcService.getPeriodDateRange(state.filters.period);
 
   // Define a consistent and accessible color palette from CSS variables
   const colors = {
@@ -97,7 +98,7 @@ export function updateCharts() {
   });
 
   // Budget vs Consuntivo Chart
-  const budgetConsuntivoData = chartService.getBudgetVsConsuntivoData(filteredCommesse);
+  const budgetConsuntivoData = chartService.getBudgetVsConsuntivoData(filteredCommesse, startDate, endDate);
   const ctx2 = elements.budgetVsConsuntivoChartCanvas.getContext('2d');
   if (state.charts.budgetVsConsuntivoChart) state.charts.budgetVsConsuntivoChart.destroy();
   state.charts.budgetVsConsuntivoChart = new Chart(ctx2, {

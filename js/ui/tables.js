@@ -46,7 +46,7 @@ export function sortCommesseTable(sortBy) {
       case 'margine':
         const margineA = calcService.calcolaMargineUltimoForecast(a.id);
         const margineB = calcService.calcolaMargineUltimoForecast(b.id);
-        // Treat commesse with no forecast as having the lowest priority in sorting
+        // Ordina le commesse senza forecast alla fine
         if (margineA === null && margineB === null) return 0;
         if (margineA === null) return 1; // a is greater (comes last)
         if (margineB === null) return -1; // b is greater (comes last)
@@ -76,7 +76,7 @@ export function updateTables() {
   const paginatedCommesse = filteredCommesse.slice(startIndex, endIndex);
 
   if (filteredCommesse.length === 0) {
-    elements.commesseTable.innerHTML = createEmptyStateHTML('Nessuna commessa trovata.', 'Crea Nuova Commessa', 'commessa');
+    elements.commesseTable.innerHTML = createEmptyStateHTML('Nessuna commessa trovata.', 'Nuova Commessa', 'commessa');
   } else {
     elements.commesseTable.innerHTML = paginatedCommesse
       .map((commessa) => {
@@ -139,39 +139,57 @@ function renderBudgetTable(commessaId) {
   let budgetHTML = '';
 
   if (budgetMasterData.length === 0) {
-    budgetHTML = createEmptyStateHTML('Nessun budget definito per questa commessa.', 'Aggiungi Budget', 'budget');
+    budgetHTML = createEmptyStateHTML('Nessun budget definito per questa commessa.', 'Nuovo Budget', 'budget');
   } else {
     budgetMasterData.sort((a, b) => b.meseCompetenza.localeCompare(a.meseCompetenza));
     budgetMasterData.forEach((master) => {
-      budgetHTML += `
-              <tr class="bg-blue-50 border-b-2 border-blue-200">
-                <td colspan="7" class="px-4 py-3">
-                  <div class="flex justify-between items-center">
-                    <div class="flex gap-4">
-                      <span class="font-bold text-blue-900">Budget: ${master.budgetId}</span>
-                      <span class="text-blue-700">Mese: ${master.meseCompetenza}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <span class="font-bold text-blue-900">Totale: ${utils.formatCurrency(master.totale)}</span>
-                      <button data-action="duplicate" data-id="${master.id}" class="text-green-600 hover:text-green-800 bg-green-100 px-2 py-1 rounded text-xs flex items-center gap-1" title="Duplica Budget">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
-                        </svg>
-                        Duplica
-                      </button>
-                      <button data-action="delete" data-id="${master.id}" data-type="budgetMaster" class="text-red-600 hover:text-red-800 bg-red-100 px-2 py-1 rounded text-xs flex items-center gap-1" title="Elimina Intero Budget">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                        </svg>
-                        Elimina
-                      </button>
-                    </div>
-                  </div>
-                </td>
-              </tr>`;
-
-      master.items.forEach((item) => {
+      if (master.type === 'total') {
         budgetHTML += `
+                <tr class="bg-blue-50 border-b-2 border-blue-200">
+                    <td colspan="7" class="px-4 py-3">
+                        <div class="flex justify-between items-center">
+                            <div class="flex gap-4 items-center">
+                                <span class="font-bold text-blue-900">Budget: ${master.budgetId}</span>
+                                <span class="text-blue-700">Mese: ${master.meseCompetenza}</span>
+                                <span class="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded-full">Importo Totale</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-blue-900">Totale: ${utils.formatCurrency(master.totale)}</span>
+                                <button data-action="delete" data-id="${master.id}" data-type="budgetMaster" class="text-red-600 hover:text-red-800 bg-red-100 px-2 py-1 rounded text-xs flex items-center gap-1" title="Elimina Budget">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                    Elimina
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+      } else {
+        // Render detailed budget
+        budgetHTML += `
+                <tr class="bg-blue-50 border-b-2 border-blue-200">
+                    <td colspan="7" class="px-4 py-3">
+                        <div class="flex justify-between items-center">
+                            <div class="flex gap-4">
+                                <span class="font-bold text-blue-900">Budget: ${master.budgetId}</span>
+                                <span class="text-blue-700">Mese: ${master.meseCompetenza}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-blue-900">Totale: ${utils.formatCurrency(master.totale)}</span>
+                                <button data-action="duplicate" data-id="${master.id}" class="text-green-600 hover:text-green-800 bg-green-100 px-2 py-1 rounded text-xs flex items-center gap-1" title="Duplica Budget">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+                                    Duplica
+                                </button>
+                                <button data-action="delete" data-id="${master.id}" data-type="budgetMaster" class="text-red-600 hover:text-red-800 bg-red-100 px-2 py-1 rounded text-xs flex items-center gap-1" title="Elimina Intero Budget">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                    Elimina
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>`;
+
+        master.items.forEach((item) => {
+          budgetHTML += `
                 <tr class="hover:bg-gray-50">
                   <td class="px-4 py-3 text-sm pl-8">-</td>
                   <td class="px-4 py-3 text-sm">-</td>
@@ -190,7 +208,8 @@ function renderBudgetTable(commessaId) {
                     </div>
                   </td>
                 </tr>`;
-      });
+        });
+      }
     });
   }
 
@@ -317,11 +336,19 @@ function renderMarginiTable(commessaId) {
   }
 
   if (marginiCommessa.length > 0) {
-    marginiCommessa.sort((a, b) => b.mese.localeCompare(a.mese));
+    marginiCommessa.sort((a, b) => b.mese.localeCompare(a.mese)); // Descending for display
+    const marginiCommessaAsc = [...marginiCommessa].sort((a, b) => a.mese.localeCompare(b.mese)); // Ascending for calculation
+
     elements.marginiTable.innerHTML = marginiCommessa
       .map((margine) => {
+        const indexInAsc = marginiCommessaAsc.findIndex((m) => m.id === margine.id);
+        const prevMargine = indexInAsc > 0 ? marginiCommessaAsc[indexInAsc - 1] : null;
+
+        const costoMensile = prevMargine ? margine.costoConsuntivi - prevMargine.costoConsuntivi : margine.costoConsuntivi;
+        const hhMensile = prevMargine ? margine.hhConsuntivo - prevMargine.hhConsuntivo : margine.hhConsuntivo;
+
         const ricavoConsuntivo = calcService.calcolaMontanteFattureFinoAlMese(commessaId, margine.mese);
-        const costoMedioHH = margine.hhConsuntivo > 0 ? margine.costoConsuntivi / margine.hhConsuntivo : 0;
+        const costoMedioHH = hhMensile > 0 ? costoMensile / hhMensile : 0;
         const marginePerc = ricavoConsuntivo > 0 ? ((ricavoConsuntivo - margine.costoConsuntivi) / ricavoConsuntivo) * 100 : 0;
 
         const ricavoBudgetTotale = calcService.calcolaTotaleBudgetRecent(commessaId);
@@ -335,8 +362,10 @@ function renderMarginiTable(commessaId) {
         return `
                     <tr class="hover:bg-gray-50">
                         <td class="px-2 py-3 font-medium text-xs">${margine.mese}</td>
-                        <td class="px-2 py-3 text-center text-blue-600 font-medium text-xs">${utils.formatCurrency(margine.costoConsuntivi)}</td>
-                        <td class="px-2 py-3 text-center text-blue-600 font-medium text-xs">${margine.hhConsuntivo.toFixed(2)}</td>
+                        <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${utils.formatCurrency(margine.costoConsuntivi)}</td>
+                        <td class="px-2 py-3 text-center text-gray-600 font-medium text-xs">${utils.formatCurrency(costoMensile)}</td>
+                        <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${margine.hhConsuntivo.toFixed(2)}</td>
+                        <td class="px-2 py-3 text-center text-gray-600 font-medium text-xs">${hhMensile.toFixed(2)}</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(costoMedioHH)}</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoConsuntivo)}</td>
                         <td class="px-2 py-3 text-center text-xs">${marginePerc.toFixed(2)}%</td>
@@ -361,7 +390,7 @@ function renderMarginiTable(commessaId) {
       })
       .join('');
   } else {
-    elements.marginiTable.innerHTML = createEmptyStateHTML('Nessun dato di margine per questa commessa.', 'Aggiungi Forecast', 'margine');
+    elements.marginiTable.innerHTML = createEmptyStateHTML('Nessun forecast inserito per questa commessa.', 'Aggiungi Forecast', 'margine');
   }
 }
 

@@ -17,16 +17,29 @@ export function getMonthlyTrendData(commesse) {
       monthlyData[month].ricavi += fattura.importo;
     });
 
-  // Aggregate margini by month
-  state.dati.margini
-    .filter((m) => commesse.some((c) => c.id === m.commessaId))
-    .forEach((margine) => {
-      const month = margine.mese;
-      if (!monthlyData[month]) {
-        monthlyData[month] = { ricavi: 0, costi: 0 };
+  // Group margini by commessa to calculate monthly delta
+  const marginiByCommessa = state.dati.margini.reduce((acc, m) => {
+    if (commesse.some((c) => c.id === m.commessaId)) {
+      if (!acc[m.commessaId]) {
+        acc[m.commessaId] = [];
       }
-      monthlyData[month].costi += margine.costoConsuntivi;
-    });
+      acc[m.commessaId].push(m);
+    }
+    return acc;
+  }, {});
+
+  // Calculate monthly costs and aggregate
+  for (const commessaId in marginiByCommessa) {
+    const commessaMargini = marginiByCommessa[commessaId].sort((a, b) => a.mese.localeCompare(b.mese));
+    for (let i = 0; i < commessaMargini.length; i++) {
+      const current = commessaMargini[i];
+      const previous = commessaMargini[i - 1];
+      const monthlyCost = previous ? current.costoConsuntivi - previous.costoConsuntivi : current.costoConsuntivi;
+
+      if (!monthlyData[current.mese]) monthlyData[current.mese] = { ricavi: 0, costi: 0 };
+      monthlyData[current.mese].costi += monthlyCost;
+    }
+  }
 
   const sortedMonths = Object.keys(monthlyData).sort();
 
@@ -37,12 +50,25 @@ export function getMonthlyTrendData(commesse) {
   };
 }
 
-export function getBudgetVsConsuntivoData(commesse) {
+export function getBudgetVsConsuntivoData(commesse, startDate, endDate) {
   const data = commesse.map((commessa) => {
     const budget = calcolaTotaleBudgetRecent(commessa.id);
-    const consuntivo = state.dati.margini.filter((m) => m.commessaId === commessa.id).reduce((sum, m) => sum + m.costoConsuntivi, 0);
 
-    return { label: commessa.nome, budget, consuntivo };
+    let consuntivoPeriodo = 0;
+    const commessaMargini = state.dati.margini.filter((m) => m.commessaId === commessa.id).sort((a, b) => a.mese.localeCompare(b.mese)); // Sort ascending
+
+    for (let i = 0; i < commessaMargini.length; i++) {
+      const current = commessaMargini[i];
+      const itemDate = new Date(current.mese + '-02');
+
+      if (!startDate || !endDate || (itemDate >= startDate && itemDate <= endDate)) {
+        const previous = commessaMargini[i - 1];
+        const monthlyCost = previous ? current.costoConsuntivi - previous.costoConsuntivi : current.costoConsuntivi;
+        consuntivoPeriodo += monthlyCost;
+      }
+    }
+
+    return { label: commessa.nome, budget, consuntivo: consuntivoPeriodo };
   });
 
   return {

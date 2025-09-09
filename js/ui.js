@@ -220,25 +220,47 @@ export function openModal(type, id = null) {
         const budgetMasters = calcService.getBudgetMasterData(state.selectedCommessa);
         let masterOptions = '<option value="new">+ Crea Nuovo Budget</option>';
         budgetMasters.forEach((master) => {
-          masterOptions += `<option value="${master.id}">${master.budgetId} - ${master.meseCompetenza}</option>`;
+          if (master.type !== 'total') {
+            masterOptions += `<option value="${master.id}">${master.budgetId} - ${master.meseCompetenza}</option>`;
+          }
         });
 
         fieldsHTML = `
                 <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Budget</label>
-                  <select id="budget-master-select" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required>
-                    ${masterOptions}
-                  </select>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Tipo di Inserimento</label>
+                  <div class="flex gap-4">
+                      <label class="flex items-center"><input type="radio" name="budgetType" value="detail" class="mr-2" checked> Dettagliato</label>
+                      <label class="flex items-center"><input type="radio" name="budgetType" value="total" class="mr-2"> Importo Totale</label>
+                  </div>
                 </div>
+
                 <div id="new-budget-fields" class="hidden">
-                  <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ID Budget</label><input type="text" name="budgetId" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"></div>
+                  <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ID Nuovo Budget</label><input type="text" name="budgetId" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"></div>
                   <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese Competenza</label><input type="month" name="meseCompetenza" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"></div>
                 </div>
-                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Figura</label><select name="figura" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required><option value="">Seleziona figura</option><option value="Senior Manager">Senior Manager</option><option value="Project Manager">Project Manager</option><option value="Software Engineer">Software Engineer</option><option value="Junior Developer">Junior Developer</option></select></div>
-                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tariffa €</label><input type="number" step="0.01" name="tariffa" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giorni</label><input type="number" name="giorni" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
+
+                <div id="budget-master-container">
+                    <div class="mb-4">
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Budget Esistente (per dettagli)</label>
+                      <select id="budget-master-select" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required>
+                        ${masterOptions}
+                      </select>
+                    </div>
+                </div>
+
+                <div id="budget-detail-fields">
+                    <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Figura</label><select name="figura" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required><option value="">Seleziona figura</option><option value="Senior Manager">Senior Manager</option><option value="Project Manager">Project Manager</option><option value="Software Engineer">Software Engineer</option><option value="Junior Developer">Junior Developer</option></select></div>
+                    <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tariffa €</label><input type="number" step="0.01" name="tariffa" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+                    <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giorni</label><input type="number" name="giorni" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+                </div>
+
+                <div id="budget-total-field" class="hidden">
+                    <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Importo Totale Budget €</label><input type="number" step="0.01" name="importo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"></div>
+                </div>`;
       } else {
+        // Editing a budget detail line. Editing a total-based budget master is not yet supported through this modal.
         fieldsHTML = `
+                <div class="mb-4">
                 <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Figura</label><select name="figura" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required><option value="">Seleziona figura</option><option value="Senior Manager">Senior Manager</option><option value="Project Manager">Project Manager</option><option value="Software Engineer">Software Engineer</option><option value="Junior Developer">Junior Developer</option></select></div>
                 <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tariffa €</label><input type="number" step="0.01" name="tariffa" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
                 <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giorni</label><input type="number" name="giorni" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
@@ -282,30 +304,48 @@ export function openModal(type, id = null) {
   }
 
   setTimeout(() => {
-    const budgetMasterSelect = document.getElementById('budget-master-select');
-    const newBudgetFields = document.getElementById('new-budget-fields');
+    const budgetTypeRadios = elements.modalForm.querySelectorAll('input[name="budgetType"]');
+    if (budgetTypeRadios.length > 0) {
+      const detailFields = document.getElementById('budget-detail-fields');
+      const totalField = document.getElementById('budget-total-field');
+      const masterContainer = document.getElementById('budget-master-container');
+      const newBudgetFields = document.getElementById('new-budget-fields');
+      const budgetMasterSelect = document.getElementById('budget-master-select');
 
-    if (budgetMasterSelect && newBudgetFields) {
-      // Se il select esiste, aggiungi l'event listener
-      budgetMasterSelect.addEventListener('change', (e) => {
-        if (e.target.value === 'new') {
+      const handleNewBudgetFieldsVisibility = () => {
+        const isDetailMode = elements.modalForm.querySelector('input[name="budgetType"]:checked').value === 'detail';
+        if (!isDetailMode) {
+          // Always show for 'total' mode
           newBudgetFields.classList.remove('hidden');
-          newBudgetFields.querySelectorAll('input').forEach((input) => (input.required = true));
-        } else {
-          newBudgetFields.classList.add('hidden');
-          newBudgetFields.querySelectorAll('input').forEach((input) => (input.required = false));
+          newBudgetFields.querySelectorAll('input').forEach((el) => (el.required = true));
+          return;
         }
+        // In 'detail' mode, visibility depends on dropdown
+        const show = budgetMasterSelect.value === 'new';
+        newBudgetFields.classList.toggle('hidden', !show);
+        newBudgetFields.querySelectorAll('input').forEach((el) => (el.required = show));
+      };
+
+      const handleBudgetTypeChange = (type) => {
+        const isDetail = type === 'detail';
+        detailFields.classList.toggle('hidden', !isDetail);
+        totalField.classList.toggle('hidden', isDetail);
+        masterContainer.classList.toggle('hidden', !isDetail);
+
+        detailFields.querySelectorAll('input, select').forEach((el) => (el.required = isDetail));
+        totalField.querySelector('input').required = !isDetail;
+
+        handleNewBudgetFieldsVisibility();
+      };
+
+      budgetTypeRadios.forEach((radio) => {
+        radio.addEventListener('change', (e) => handleBudgetTypeChange(e.target.value));
       });
 
-      // Se il primo budget è "new", mostra subito i campi
-      if (budgetMasterSelect.value === 'new') {
-        newBudgetFields.classList.remove('hidden');
-        newBudgetFields.querySelectorAll('input').forEach((input) => (input.required = true));
-      }
-    } else if (newBudgetFields && !budgetMasterSelect) {
-      // Se non c'è il select ma ci sono i campi del nuovo budget, assicurati che siano visibili e required
-      newBudgetFields.classList.remove('hidden');
-      newBudgetFields.querySelectorAll('input').forEach((input) => (input.required = true));
+      budgetMasterSelect.addEventListener('change', handleNewBudgetFieldsVisibility);
+
+      // Initial state
+      handleBudgetTypeChange('detail');
     }
   }, 200);
 

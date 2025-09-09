@@ -607,8 +607,10 @@
                     <thead class="bg-gray-50 border-b">
                       <tr>
                         <th class="px-2 py-3 text-left font-medium text-gray-900">Mese</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons.</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons.</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Cum.</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Mensile</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons. Cum.</th>
+                        <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons. Mensile</th>
                         <th class="px-2 py-3 text-center font-medium text-gray-900">Costo/HH</th>
                         <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Cons.</th>
                         <th class="px-2 py-3 text-center font-medium text-gray-900">Margine %</th>
@@ -631,11 +633,13 @@
               <div class="legend-content hidden mt-4 p-4 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
                 <h5 class="font-bold text-sm mb-2">Legenda Calcoli Tabella Margini</h5>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-                  <p><strong>Costo Cons.:</strong> Costo totale registrato per il mese.</p>
-                  <p><strong>HH Cons.:</strong> Ore totali registrate per il mese.</p>
-                  <p><strong>Costo/HH:</strong> Costo medio orario (Costo Cons. / HH Cons.).</p>
+                  <p><strong>Costo Cons. Cum.:</strong> Costo totale cumulativo registrato fino a quel mese.</p>
+                  <p><strong>Costo Cons. Mensile:</strong> Costo effettivo del singolo mese.</p>
+                  <p><strong>HH Cons. Cum.:</strong> Ore totali cumulative registrate fino a quel mese.</p>
+                  <p><strong>HH Cons. Mensile:</strong> Ore effettive del singolo mese.</p>
+                  <p><strong>Costo/HH:</strong> Costo medio orario (Costo Mensile / HH Mensili).</p>
                   <p><strong>Ricavo Cons.:</strong> Totale fatturato per la commessa fino al mese del record.</p>
-                  <p><strong>Margine %:</strong> (Ricavo Cons. - Costo Cons.) / Ricavo Cons.</p>
+                  <p><strong>Margine %:</strong> (Ricavo Cons. - Costo Cons. Cum.) / Ricavo Cons.</p>
                   <p><strong>Ricavo Budget Tot:</strong> Valore dell'ultimo budget approvato per la commessa.</p>
                   <p><strong>Costo Budget (EAC):</strong> Stima del costo totale a finire (Estimate At Completion). Calcolato come: Ricavo Budget Tot * (1 - Margine %).</p>
                   <p><strong>Costo ETC:</strong> Stima del costo rimanente (Estimate To Complete). Calcolato come: EAC - Costo Cons.</p>

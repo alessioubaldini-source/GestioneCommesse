@@ -72,13 +72,13 @@ export function downloadImportTemplate() {
 
     // Sheet: Budget
     const budgetData = [
-      ['ID Budget', 'Mese Competenza (YYYY-MM)', 'Figura', 'Tariffa', 'Giorni'],
+      ['ID Budget', 'Mese Competenza (YYYY-MM)', 'Figura', 'Tariffa', 'Giorni', 'Importo Totale (se non dettagliato)'],
       ['BUDGET_01', '2024-10', 'Senior Developer', 500, 20],
       ['BUDGET_01', '2024-10', 'Junior Developer', 300, 15],
-      ['BUDGET_02', '2024-11', 'Senior Developer', 500, 22],
+      ['BUDGET_02', '2024-11', '', '', '', 50000],
     ];
     const budgetWS = XLSX.utils.aoa_to_sheet(budgetData);
-    budgetWS['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 10 }, { wch: 10 }];
+    budgetWS['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 30 }];
     XLSX.utils.book_append_sheet(wb, budgetWS, TEMPLATE_SHEETS.BUDGET);
 
     // Sheet: Ordini
@@ -158,14 +158,47 @@ export async function importCommessaFromExcel(file) {
     if (budgetSheet) {
       const budgetData = XLSX.utils.sheet_to_json(budgetSheet);
       const budgetMasterMap = new Map();
+      const totalBudgets = new Map();
+
+      // First pass: find total-based budgets
+      budgetData.forEach((row) => {
+        const importoTotale = row['Importo Totale (se non dettagliato)'];
+        if (importoTotale && parseFloat(importoTotale) > 0) {
+          const masterKey = `${row['ID Budget']}-${row['Mese Competenza (YYYY-MM)']}`;
+          totalBudgets.set(masterKey, { budgetId: row['ID Budget'], meseCompetenza: row['Mese Competenza (YYYY-MM)'], importo: parseFloat(importoTotale) });
+        }
+      });
+
+      // Create total-based masters
+      totalBudgets.forEach((value, key) => {
+        const newMaster = {
+          id: generateId(state.dati.budgetMaster.concat(newBudgetMasters)),
+          commessaId: newCommessa.id,
+          budgetId: value.budgetId,
+          meseCompetenza: value.meseCompetenza,
+          type: 'total',
+          importo: value.importo,
+        };
+        newBudgetMasters.push(newMaster);
+        budgetMasterMap.set(key, newMaster.id); // Mark as processed
+      });
+
+      // Second pass: process detail-based budgets
       budgetData.forEach((row) => {
         const masterKey = `${row['ID Budget']}-${row['Mese Competenza (YYYY-MM)']}`;
+        // Skip if it's a total-based budget or if there's no detail data
+        if (totalBudgets.has(masterKey) || !row['Figura'] || !row['Tariffa'] || !row['Giorni']) {
+          return;
+        }
+
         if (!budgetMasterMap.has(masterKey)) {
           const newMaster = {
             id: generateId(state.dati.budgetMaster.concat(newBudgetMasters)),
             commessaId: newCommessa.id,
             budgetId: row['ID Budget'],
             meseCompetenza: row['Mese Competenza (YYYY-MM)'],
+            type: 'detail',
+            importo: null,
           };
           newBudgetMasters.push(newMaster);
           budgetMasterMap.set(masterKey, newMaster.id);

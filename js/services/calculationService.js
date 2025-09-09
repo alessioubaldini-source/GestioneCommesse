@@ -32,15 +32,6 @@ export function getPeriodDateRange(periodFilter) {
 
 export function getFilteredCommesse() {
   let filtered = [...state.dati.commesse];
-  const { startDate, endDate } = getPeriodDateRange(state.filters.period);
-
-  // Filter by period
-  if (startDate && endDate) {
-    filtered = filtered.filter((c) => {
-      const commessaDate = new Date(c.dataInizio);
-      return commessaDate >= startDate && commessaDate <= endDate;
-    });
-  }
 
   // Filter by client
   if (state.filters.client !== 'all') {
@@ -69,6 +60,11 @@ export function calcolaTotaleBudgetRecent(commessaId) {
     return current.meseCompetenza > latest.meseCompetenza ? current : latest;
   });
 
+  if (latestMaster.type === 'total') {
+    return latestMaster.importo || 0;
+  }
+
+  // For 'detail' type
   const details = state.dati.budget?.filter((b) => b.budgetMasterId === latestMaster.id) || [];
   return details.reduce((sum, b) => sum + b.tariffa * b.giorni, 0);
 }
@@ -102,10 +98,14 @@ export function getBudgetMasterData(commessaId) {
 
   return budgetMasters
     .map((master) => {
+      if (master.type === 'total') {
+        return { ...master, items: [], totale: master.importo || 0 };
+      }
+      // For 'detail' type
       const details = state.dati.budget?.filter((b) => b.budgetMasterId === master.id) || [];
       const totale = details.reduce((sum, b) => sum + b.tariffa * b.giorni, 0);
 
-      return { ...master, items: details, totale: totale };
+      return { ...master, items: details, totale };
     })
     .sort((a, b) => b.meseCompetenza.localeCompare(a.meseCompetenza));
 }
@@ -192,14 +192,29 @@ export function getPreviousPeriodDateRange(periodFilter) {
  */
 export function calculateKpisForPeriod(commesseIds, startDate, endDate) {
   const filterByDate = (item) => {
-    if (!startDate || !endDate) return true; // No date filter for 'all'
-    const itemDate = new Date(item.meseCompetenza + '-02'); // Use day 2 to avoid timezone issues
+    if (!startDate || !endDate) return true; // 'all' periods
+    // Use 'mese' for margini and 'meseCompetenza' for fatture
+    const monthString = item.mese || item.meseCompetenza;
+    if (!monthString) return false;
+    const itemDate = new Date(monthString + '-02'); // Use day 2 to avoid timezone issues
     return itemDate >= startDate && itemDate <= endDate;
   };
 
   const ricavi = state.dati.fatture.filter((f) => commesseIds.has(f.commessaId) && filterByDate(f)).reduce((acc, f) => acc + f.importo, 0);
 
-  const costi = state.dati.margini.filter((m) => commesseIds.has(m.commessaId) && filterByDate(m)).reduce((acc, m) => acc + m.costoConsuntivi, 0);
+  let costi = 0;
+  commesseIds.forEach((id) => {
+    const commessaMargini = state.dati.margini.filter((m) => m.commessaId === id).sort((a, b) => a.mese.localeCompare(b.mese)); // Sort ascending
+
+    for (let i = 0; i < commessaMargini.length; i++) {
+      const current = commessaMargini[i];
+      if (filterByDate(current)) {
+        const previous = commessaMargini[i - 1];
+        const monthlyCost = previous ? current.costoConsuntivi - previous.costoConsuntivi : current.costoConsuntivi;
+        costi += monthlyCost;
+      }
+    }
+  });
 
   return { ricavi, costi };
 }
