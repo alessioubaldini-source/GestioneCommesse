@@ -202,6 +202,13 @@ export function initEventListeners() {
     }
   });
 
+  // Chart Modal close events
+  elements.chartModal.addEventListener('click', (e) => {
+    if (e.target === elements.chartModal || e.target.closest('#close-chart-modal-btn')) {
+      ui.closeChartModal();
+    }
+  });
+
   // Legend Toggles
   document.body.addEventListener('click', (e) => {
     const legendToggle = e.target.closest('.legend-toggle');
@@ -214,6 +221,11 @@ export function initEventListeners() {
           legendContent.classList.toggle('hidden');
         }
       }
+    }
+
+    const enlargeBtn = e.target.closest('.enlarge-chart-btn');
+    if (enlargeBtn) {
+      ui.openChartModal(enlargeBtn.dataset.chartId);
     }
   });
 

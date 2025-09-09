@@ -26,17 +26,56 @@ export function update() {
   components.updateCommessaHeader();
   components.updateFilterOptions();
   components.updateButtonStates();
+  components.updateCurrentActivityPhase();
   components.updateCommesseMonitorate();
 }
 
 export function switchTab(tabName) {
-  document.querySelectorAll('.tab-content').forEach((el) => el.classList.add('hidden'));
-  document.getElementById(tabName + '-content').classList.remove('hidden');
-  document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'dark:border-blue-400');
-    btn.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+  const activeTabId = tabName + '-content';
+  const allTabs = document.querySelectorAll('.tab-content');
+  let currentlyVisibleTab = null;
+
+  allTabs.forEach((tab) => {
+    if (!tab.classList.contains('hidden')) {
+      currentlyVisibleTab = tab;
+    }
   });
-  document.getElementById('tab-' + tabName).classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400', 'dark:border-blue-400');
+
+  const newTab = document.getElementById(activeTabId);
+
+  // Do nothing if we are already on the correct tab
+  if (currentlyVisibleTab && currentlyVisibleTab.id === activeTabId) {
+    return;
+  }
+
+  const showNewTab = () => {
+    newTab.classList.remove('hidden');
+    newTab.classList.add('fade-in');
+  };
+
+  // If there is a visible tab, fade it out first
+  if (currentlyVisibleTab) {
+    currentlyVisibleTab.classList.add('fade-out');
+    currentlyVisibleTab.addEventListener(
+      'animationend',
+      () => {
+        currentlyVisibleTab.classList.add('hidden');
+        currentlyVisibleTab.classList.remove('fade-out');
+        showNewTab();
+      },
+      { once: true }
+    );
+  } else {
+    // If no tab is visible, just fade in the new one
+    showNewTab();
+  }
+
+  // Style the tab buttons
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.classList.remove('border-blue-500', 'text-blue-600');
+    btn.classList.add('border-transparent', 'text-gray-500');
+  });
+  document.getElementById('tab-' + tabName).classList.add('border-blue-500', 'text-blue-600');
 }
 
 export function switchSubTab(tabName) {
@@ -198,6 +237,43 @@ export function openModal(type, id = null) {
   }, 200);
 
   elements.modal.classList.remove('hidden');
+}
+
+export function openChartModal(chartId) {
+  const originalChart = state.charts[chartId];
+  if (!originalChart) {
+    console.error('Chart instance not found:', chartId);
+    return;
+  }
+
+  // Destroy previous enlarged chart if it exists
+  if (state.charts.enlargedChart) {
+    state.charts.enlargedChart.destroy();
+  }
+
+  const ctx = elements.enlargedChartCanvas.getContext('2d');
+  const chartConfig = {
+    type: originalChart.config.type,
+    data: originalChart.config.data,
+    options: {
+      ...originalChart.config.options,
+      maintainAspectRatio: false, // Important for modal resizing
+    },
+  };
+
+  state.charts.enlargedChart = new Chart(ctx, chartConfig);
+
+  const title = originalChart.canvas.parentElement.querySelector('h3').textContent;
+  elements.chartModalTitle.textContent = title;
+  elements.chartModal.classList.remove('hidden');
+}
+
+export function closeChartModal() {
+  if (state.charts.enlargedChart) {
+    state.charts.enlargedChart.destroy();
+    state.charts.enlargedChart = null;
+  }
+  elements.chartModal.classList.add('hidden');
 }
 
 export function closeModal() {

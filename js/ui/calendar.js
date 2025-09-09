@@ -8,7 +8,7 @@ import { getFilteredCommesse } from '../services/calculationService.js';
  * Regole per evidenziare periodi di attività nel calendario.
  * Ogni regola definisce un intervallo di giorni del mese, una descrizione e un colore di sfondo.
  */
-const activityRules = [
+export const activityRules = [
   { startDay: 1, endDay: 3, description: 'Quadratura TS e invio consuntivi', color: 'bg-yellow-100' },
   { startDay: 4, endDay: 12, description: 'Invio fatture e revisione forecast', color: 'bg-green-100' },
   { startDay: 16, endDay: 18, description: 'Controllo ricavi e approvazione forecast', color: 'bg-indigo-100' },
@@ -98,6 +98,7 @@ export function renderCalendar() {
                 <button id="prev-month-btn" class="p-1 rounded-full hover:bg-gray-200" title="Mese precedente">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
+                <button id="today-btn" class="px-3 py-1 text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200" title="Vai a oggi">Oggi</button>
                 <button id="next-month-btn" class="p-1 rounded-full hover:bg-gray-200" title="Mese successivo">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
@@ -121,8 +122,8 @@ export function renderCalendar() {
     calendarHTML += `<div></div>`;
   }
 
+  const today = new Date();
   for (let day = 1; day <= daysInMonth; day++) {
-    const today = new Date();
     const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
     const dayEvents = events.filter((e) => e.day === day);
@@ -131,14 +132,18 @@ export function renderCalendar() {
     let dayClasses = 'py-2 rounded-lg relative cursor-default text-center';
     let eventHTML = '';
 
+    const dayDate = new Date(year, month, day);
+    const dayOfWeek = dayDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Domenica, 6 = Sabato
+
     // Cerca una regola di attività corrispondente per il giorno corrente
     const matchingRule = activityRules.find((rule) => day >= rule.startDay && day <= rule.endDay);
 
     // Imposta stile in base al fatto che sia oggi o un giorno di attività
     if (isToday) {
       dayClasses += ' bg-blue-600 text-white font-bold';
-    } else if (matchingRule) {
-      // Se non è oggi MA c'è una regola, applica lo sfondo dell'attività
+    } else if (matchingRule && !isWeekend) {
+      // Se non è oggi, c'è una regola e non è un weekend, applica lo sfondo dell'attività
       dayClasses += ` ${matchingRule.color}`;
     }
 
@@ -158,6 +163,20 @@ export function renderCalendar() {
 
   calendarHTML += `</div>`;
   elements.calendarContainer.innerHTML = calendarHTML;
+
+  // Attach event listeners for calendar navigation
+  document.getElementById('prev-month-btn')?.addEventListener('click', () => {
+    state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() - 1);
+    renderCalendar();
+  });
+  document.getElementById('today-btn')?.addEventListener('click', () => {
+    state.calendar.currentDate = new Date();
+    renderCalendar();
+  });
+  document.getElementById('next-month-btn')?.addEventListener('click', () => {
+    state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() + 1);
+    renderCalendar();
+  });
 }
 
 export function renderCalendarLegend() {
