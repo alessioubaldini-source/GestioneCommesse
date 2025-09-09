@@ -9,6 +9,19 @@ export function loadData() {
   if (savedData) {
     try {
       state.dati = JSON.parse(savedData);
+      // Ensure activityRules exists, otherwise load defaults
+      if (!state.dati.activityRules) {
+        state.dati.activityRules = getDefaultData().activityRules;
+      } else {
+        // Migration for old color values to ensure visibility
+        state.dati.activityRules.forEach((rule) => {
+          if (rule.color === 'bg-orange-100' || rule.color === 'bg-orange-200') {
+            rule.color = 'bg-purple-200';
+          } else if (rule.color === 'bg-cyan-100' || rule.color === 'bg-cyan-200') {
+            rule.color = 'bg-sky-200';
+          }
+        });
+      }
       console.log('Dati caricati dal localStorage:', state.dati);
     } catch (error) {
       console.error('Errore nel caricamento dal localStorage:', error);
@@ -23,6 +36,11 @@ export function loadData() {
   if (state.dati.commesse.length > 0) {
     state.selectedCommessa = state.dati.commesse[0].id;
   }
+}
+
+export function saveActivityRules(rules) {
+  state.dati.activityRules = rules;
+  saveData();
 }
 
 export function saveData() {
@@ -315,6 +333,11 @@ function getDefaultData() {
       { id: 2, commessaId: 2, mese: '2024-02', costoConsuntivi: 6000, hhConsuntivo: 150 },
       { id: 3, commessaId: 3, mese: '2024-06', costoConsuntivi: 10000, hhConsuntivo: 220 },
       { id: 4, commessaId: 3, mese: '2024-07', costoConsuntivi: 14000, hhConsuntivo: 280 },
+    ],
+    activityRules: [
+      { startDay: 1, endDay: 3, description: 'Quadratura TS e invio consuntivi', color: 'bg-yellow-100' },
+      { startDay: 4, endDay: 12, description: 'Invio fatture e revisione forecast', color: 'bg-green-100' },
+      { startDay: 16, endDay: 18, description: 'Controllo ricavi e approvazione forecast', color: 'bg-indigo-100' },
     ],
   };
 }

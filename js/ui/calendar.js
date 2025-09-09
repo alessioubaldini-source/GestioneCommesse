@@ -4,14 +4,13 @@ import { state } from '../state.js';
 import { elements } from '../dom.js';
 import { getFilteredCommesse } from '../services/calculationService.js';
 
-/**
- * Regole per evidenziare periodi di attività nel calendario.
- * Ogni regola definisce un intervallo di giorni del mese, una descrizione e un colore di sfondo.
- */
-export const activityRules = [
-  { startDay: 1, endDay: 3, description: 'Quadratura TS e invio consuntivi', color: 'bg-yellow-100' },
-  { startDay: 4, endDay: 12, description: 'Invio fatture e revisione forecast', color: 'bg-green-100' },
-  { startDay: 16, endDay: 18, description: 'Controllo ricavi e approvazione forecast', color: 'bg-indigo-100' },
+export const CALENDAR_COLOR_OPTIONS = [
+  { name: 'Giallo', value: 'bg-yellow-100' },
+  { name: 'Verde', value: 'bg-green-100' },
+  { name: 'Indaco', value: 'bg-indigo-100' },
+  { name: 'Viola', value: 'bg-purple-200' },
+  { name: 'Rosso', value: 'bg-red-100' },
+  { name: 'Azzurro', value: 'bg-sky-200' },
 ];
 
 /**
@@ -94,13 +93,16 @@ export function renderCalendar() {
   let calendarHTML = `
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold">${capitalizedMonthName} ${year}</h3>
-            <div class="flex space-x-2">
+            <div class="flex items-center space-x-2">
                 <button id="prev-month-btn" class="p-1 rounded-full hover:bg-gray-200" title="Mese precedente">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
                 <button id="today-btn" class="px-3 py-1 text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200" title="Vai a oggi">Oggi</button>
                 <button id="next-month-btn" class="p-1 rounded-full hover:bg-gray-200" title="Mese successivo">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+                <button data-modal-type="configureRules" class="p-1 rounded-full hover:bg-gray-200" title="Configura Regole Calendario">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.48.398.668 1.05.26 1.431l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.127c-.331.183-.581.495-.644.87l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.37-.49l-1.296-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 01-.26-1.431l1.296-2.247a1.125 1.125 0 011.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.127.332-.183.582-.495.644-.87l.213-1.281z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
             </div>
         </div>
@@ -137,7 +139,7 @@ export function renderCalendar() {
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Domenica, 6 = Sabato
 
     // Cerca una regola di attività corrispondente per il giorno corrente
-    const matchingRule = activityRules.find((rule) => day >= rule.startDay && day <= rule.endDay);
+    const matchingRule = state.dati.activityRules?.find((rule) => day >= rule.startDay && day <= rule.endDay);
 
     // Imposta stile in base al fatto che sia oggi o un giorno di attività
     if (isToday) {
@@ -183,10 +185,10 @@ export function renderCalendarLegend() {
   if (!elements.calendarLegend) return;
 
   let legendHTML = `
-    <h4 class="font-semibold text-sm mb-2 text-gray-700">Legenda Attività</h4>
+    <h4 class="font-semibold text-sm mb-2 text-gray-700">Legenda Attività Mensili</h4>
   `;
 
-  activityRules.forEach((rule) => {
+  state.dati.activityRules?.forEach((rule) => {
     legendHTML += `
       <div class="flex items-center gap-2 text-gray-600">
         <span class="w-3 h-3 rounded-sm ${rule.color} border border-gray-300"></span>

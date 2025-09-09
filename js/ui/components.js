@@ -2,7 +2,6 @@
 
 import { state } from '../state.js';
 import { elements } from '../dom.js';
-import { activityRules } from './calendar.js';
 import * as utils from '../utils.js';
 import * as calcService from '../services/calculationService.js';
 
@@ -202,7 +201,7 @@ export function updateCurrentActivityPhase() {
   const dayOfWeek = today.getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-  const currentRule = activityRules.find((rule) => todayDayOfMonth >= rule.startDay && todayDayOfMonth <= rule.endDay);
+  const currentRule = state.dati.activityRules?.find((rule) => todayDayOfMonth >= rule.startDay && todayDayOfMonth <= rule.endDay);
 
   if (currentRule && !isWeekend) {
     elements.currentActivityPhase.innerHTML = `

@@ -185,20 +185,54 @@ export function initEventListeners() {
     const formData = new FormData(e.target);
     const dataObject = Object.fromEntries(formData.entries());
 
-    const isEditing = state.editingId !== null;
+    if (state.currentModalType === 'configureRules') {
+      const rulesContainer = document.getElementById('rules-container');
+      const ruleRows = rulesContainer.querySelectorAll('.rule-row:not(:first-child)'); // Skip header row
+      const newRules = Array.from(ruleRows)
+        .map((row) => {
+          const startDay = parseInt(row.querySelector('[name="startDay"]').value, 10);
+          const endDay = parseInt(row.querySelector('[name="endDay"]').value, 10);
+          const description = row.querySelector('[name="description"]').value;
+          const color = row.querySelector('[name="color"]').value;
+          return { startDay, endDay, description, color };
+        })
+        .filter((rule) => rule.startDay && rule.endDay && rule.description); // Filter out empty/invalid rows
 
-    data.saveForm(dataObject);
-    ui.closeModal();
-    ui.update();
+      data.saveActivityRules(newRules);
+      showToast('Regole del calendario aggiornate!', 'success');
+    } else {
+      const isEditing = state.editingId !== null;
 
-    const successMessage = isEditing ? 'Modifiche salvate con successo!' : 'Elemento creato con successo!';
-    showToast(successMessage, 'success');
+      data.saveForm(dataObject);
+      ui.closeModal();
+      ui.update();
+
+      const successMessage = isEditing ? 'Modifiche salvate con successo!' : 'Elemento creato con successo!';
+      showToast(successMessage, 'success');
+    }
   });
 
   // Modal close events
   elements.modal.addEventListener('click', (e) => {
     if (e.target === elements.modal || e.target.closest('.close-modal-btn')) {
       ui.closeModal();
+    }
+  });
+
+  // Listener for dynamic elements inside the modal
+  elements.modal.addEventListener('click', (e) => {
+    // Add new rule row
+    if (e.target.id === 'add-rule-btn') {
+      const container = document.getElementById('rules-container');
+      const newRow = document.createElement('div');
+      newRow.innerHTML = ui.createRuleRowHTML({});
+      container.appendChild(newRow.firstElementChild);
+    }
+
+    // Delete rule row
+    const deleteBtn = e.target.closest('.delete-rule-btn');
+    if (deleteBtn) {
+      deleteBtn.closest('.rule-row').remove();
     }
   });
 

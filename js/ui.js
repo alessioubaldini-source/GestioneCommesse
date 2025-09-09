@@ -132,6 +132,33 @@ export function openModal(type, id = null) {
     }
   }
 
+  // Imposta la larghezza del modale
+  const modalContent = elements.modal.querySelector('div');
+  modalContent.classList.remove('max-w-md', 'max-w-3xl');
+  if (type === 'configureRules') {
+    modalContent.classList.add('max-w-3xl');
+  } else {
+    modalContent.classList.add('max-w-md');
+  }
+
+  switch (type) {
+    case 'configureRules':
+      titleText = 'Configura Regole Calendario';
+      const rules = state.dati.activityRules || [];
+
+      const rulesHTML = rules.map((rule) => createRuleRowHTML(rule)).join('');
+
+      fieldsHTML = `
+        <div id="rules-container">
+            <div class="rule-row mb-2 text-xs font-medium text-gray-500 px-1">
+                <span>Dal Giorno</span><span>Al Giorno</span><span>Descrizione</span><span>Colore</span>
+            </div>
+            ${rulesHTML}
+        </div>
+        <button type="button" id="add-rule-btn" class="mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Aggiungi Regola</button>`;
+      break;
+  }
+
   switch (type) {
     case 'commessa':
       titleText = id ? 'Modifica Commessa' : 'Nuova Commessa';
@@ -237,6 +264,20 @@ export function openModal(type, id = null) {
   }, 200);
 
   elements.modal.classList.remove('hidden');
+}
+
+export function createRuleRowHTML(rule = {}) {
+  const colorOptions = calendar.CALENDAR_COLOR_OPTIONS;
+  return `
+    <div class="rule-row mb-2 items-center">
+        <input type="number" name="startDay" class="w-full border rounded-lg px-2 py-1 text-sm" value="${rule.startDay || ''}" min="1" max="31" placeholder="Da" required>
+        <input type="number" name="endDay" class="w-full border rounded-lg px-2 py-1 text-sm" value="${rule.endDay || ''}" min="1" max="31" placeholder="A" required>
+        <input type="text" name="description" class="w-full border rounded-lg px-2 py-1 text-sm" value="${rule.description || ''}" placeholder="Descrizione attività" required>
+        <select name="color" class="w-full border rounded-lg px-2 py-1 text-sm" required>
+            ${colorOptions.map((opt) => `<option value="${opt.value}" ${rule.color === opt.value ? 'selected' : ''}>${opt.name}</option>`).join('')}
+        </select>
+        <button type="button" class="delete-rule-btn text-red-500 hover:text-red-700 p-1 flex justify-center items-center font-bold text-lg">×</button>
+    </div>`;
 }
 
 export function openChartModal(chartId) {
