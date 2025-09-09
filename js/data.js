@@ -2,7 +2,7 @@
 
 import { showToast } from './notifications.js';
 import { state } from './state.js';
-import * as utils from './utils.js';
+import { generateId } from './utils.js';
 
 export function loadData() {
   const savedData = localStorage.getItem('gestionaleCommesseData');
@@ -116,7 +116,7 @@ export function saveForm(formData) {
     // Logic for creating new record
     switch (currentModalType) {
       case 'commessa':
-        const newCommessa = { id: utils.generateId(state.dati.commesse), ...formData };
+        const newCommessa = { id: generateId(state.dati.commesse), ...formData };
         state.dati.commesse.push(newCommessa);
         state.selectedCommessa = newCommessa.id;
         break;
@@ -126,7 +126,7 @@ export function saveForm(formData) {
 
         if (selectedMasterId === 'new') {
           const newBudgetMaster = {
-            id: utils.generateId(state.dati.budgetMaster || []),
+            id: generateId(state.dati.budgetMaster || []),
             commessaId: selectedCommessa,
             budgetId: formData.budgetId,
             meseCompetenza: formData.meseCompetenza,
@@ -136,7 +136,7 @@ export function saveForm(formData) {
           state.dati.budgetMaster.push(newBudgetMaster);
 
           const newBudgetDetail = {
-            id: utils.generateId(state.dati.budget || []),
+            id: generateId(state.dati.budget || []),
             budgetMasterId: newBudgetMaster.id,
             figura: formData.figura,
             tariffa: parseFloat(formData.tariffa),
@@ -147,7 +147,7 @@ export function saveForm(formData) {
           state.dati.budget.push(newBudgetDetail);
         } else {
           const newBudgetDetail = {
-            id: utils.generateId(state.dati.budget || []),
+            id: generateId(state.dati.budget || []),
             budgetMasterId: parseInt(selectedMasterId),
             figura: formData.figura,
             tariffa: parseFloat(formData.tariffa),
@@ -159,15 +159,15 @@ export function saveForm(formData) {
         }
         break;
       case 'ordine':
-        const newOrdine = { id: utils.generateId(state.dati.ordini), commessaId: selectedCommessa, ...formData, importo: parseFloat(formData.importo) };
+        const newOrdine = { id: generateId(state.dati.ordini), commessaId: selectedCommessa, ...formData, importo: parseFloat(formData.importo) };
         state.dati.ordini.push(newOrdine);
         break;
       case 'fattura':
-        const newFattura = { id: utils.generateId(state.dati.fatture), commessaId: selectedCommessa, ...formData, importo: parseFloat(formData.importo) };
+        const newFattura = { id: generateId(state.dati.fatture), commessaId: selectedCommessa, ...formData, importo: parseFloat(formData.importo) };
         state.dati.fatture.push(newFattura);
         break;
       case 'margine':
-        const newMargine = { id: utils.generateId(state.dati.margini), commessaId: selectedCommessa, ...formData, costoConsuntivi: parseFloat(formData.costoConsuntivi), hhConsuntivo: parseInt(formData.hhConsuntivo) };
+        const newMargine = { id: generateId(state.dati.margini), commessaId: selectedCommessa, ...formData, costoConsuntivi: parseFloat(formData.costoConsuntivi), hhConsuntivo: parseInt(formData.hhConsuntivo) };
         state.dati.margini.push(newMargine);
         break;
     }
@@ -230,7 +230,7 @@ export function duplicateBudget(masterId) {
   // Create new master
   const newMaster = {
     ...originalMaster,
-    id: utils.generateId(state.dati.budgetMaster),
+    id: generateId(state.dati.budgetMaster),
     budgetId: newBudgetId,
     meseCompetenza: newMeseCompetenza,
   };
@@ -240,7 +240,7 @@ export function duplicateBudget(masterId) {
   originalDetails.forEach((detail) => {
     const newDetail = {
       ...detail,
-      id: utils.generateId(state.dati.budget),
+      id: generateId(state.dati.budget),
       budgetMasterId: newMaster.id,
     };
     state.dati.budget.push(newDetail);

@@ -158,15 +158,29 @@
           </div>
         </div>
 
-        <!-- Commesse da Monitorare -->
-        <div class="bg-white p-6 rounded-lg shadow border mb-6">
-          <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-yellow-500">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-            </svg>
-            Commesse da Monitorare
-          </h3>
-          <div id="commesse-monitorate-list" class="space-y-3"></div>
+        <!-- Sezione Monitoraggio e Calendario -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white p-6 rounded-lg shadow border">
+            <h3 class="text-lg font-semibold flex items-center gap-2 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-yellow-500">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                />
+              </svg>
+              Commesse da Monitorare
+            </h3>
+            <div id="commesse-monitorate-list" class="space-y-3"></div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow border">
+            <div id="calendar-container">
+              <!-- Calendario renderizzato da JS -->
+            </div>
+            <div id="calendar-legend" class="mt-4 pt-4 border-t border-gray-200 text-xs space-y-1">
+              <!-- Legenda renderizzata da JS -->
+            </div>
+          </div>
         </div>
 
         <!-- Grafici Enhanced -->
@@ -469,6 +483,7 @@
                     <span id="residuo-fatture" class="font-bold ml-2">€0</span>
                   </div>
                 </div>
+                <div id="residuo-alert" class="mt-3 pt-3 border-t border-blue-200 text-xs hidden"></div>
               </div>
             </div>
 
@@ -488,6 +503,9 @@
                   </button>
                 </div>
               </div>
+
+              <!-- Alert for margin issues -->
+              <div id="margine-alert" class="mb-4 hidden"></div>
 
               <div class="bg-white rounded-lg shadow border">
                 <div class="overflow-x-auto">

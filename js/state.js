@@ -25,4 +25,12 @@ export const state = {
       totalPages: 1,
     },
   },
+  config: {
+    sogliaMargineAttenzione: 35,
+    sogliaMargineCritico: 30,
+    sogliaMargineEccellente: 45,
+  },
+  calendar: {
+    currentDate: new Date(),
+  },
 };

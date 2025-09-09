@@ -5,7 +5,7 @@ import { state } from './state.js';
 import { elements } from './dom.js';
 import * as ui from './ui.js';
 import * as data from './data.js';
-import * as utils from './utils.js';
+import { exportToExcel } from './services/excelExportService.js';
 
 export function initEventListeners() {
   // Tab navigation
@@ -61,7 +61,7 @@ export function initEventListeners() {
   });
 
   // Export Excel
-  elements.exportExcel.addEventListener('click', () => utils.exportToExcel());
+  elements.exportExcel.addEventListener('click', () => exportToExcel());
 
   // Modal events
   document.body.addEventListener('click', (e) => {
@@ -99,6 +99,19 @@ export function initEventListeners() {
       ui.updateCommessaSelect();
       ui.updateCommessaHeader();
       ui.updateCommessaSpecificTables();
+    }
+
+    // Calendar navigation
+    const prevBtn = e.target.closest('#prev-month-btn');
+    const nextBtn = e.target.closest('#next-month-btn');
+
+    if (prevBtn) {
+      state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() - 1);
+      ui.update(); // A full update will re-render everything, including the calendar
+    }
+    if (nextBtn) {
+      state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() + 1);
+      ui.update();
     }
   });
 
