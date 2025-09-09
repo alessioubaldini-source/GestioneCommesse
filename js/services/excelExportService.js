@@ -228,7 +228,14 @@ function createMarginiSheet(wb, { commesseToExport, marginiToExport }) {
     if (costoEtcCell) costoEtcCell.s = excelStyles.highlight_green_bold_currency;
 
     const oreEtcCell = marginiWS[XLSX.utils.encode_cell({ r: R, c: 10 })];
-    if (oreEtcCell) oreEtcCell.s = excelStyles.highlight_green_bold_integer;
+    if (oreEtcCell) oreEtcCell.s = excelStyles.highlight_green_bold_number_2dp;
+
+    // Apply number formats to other columns
+    const margineCell = marginiWS[XLSX.utils.encode_cell({ r: R, c: 6 })];
+    if (margineCell) margineCell.z = excelStyles.percentage;
+
+    const avanzCell = marginiWS[XLSX.utils.encode_cell({ r: R, c: 11 })];
+    if (avanzCell) avanzCell.z = excelStyles.percentage;
   }
 
   XLSX.utils.book_append_sheet(wb, marginiWS, 'Analisi Margini');

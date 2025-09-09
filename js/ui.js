@@ -135,7 +135,7 @@ export function openModal(type, id = null) {
   // Imposta la larghezza del modale
   const modalContent = elements.modal.querySelector('div');
   modalContent.classList.remove('max-w-md', 'max-w-3xl');
-  if (type === 'configureRules') {
+  if (type === 'configureRules' || type === 'settings') {
     modalContent.classList.add('max-w-3xl');
   } else {
     modalContent.classList.add('max-w-md');
@@ -156,6 +156,52 @@ export function openModal(type, id = null) {
             ${rulesHTML}
         </div>
         <button type="button" id="add-rule-btn" class="mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Aggiungi Regola</button>`;
+      break;
+    case 'settings':
+      titleText = 'Impostazioni Applicazione';
+      const { sogliaMargineAttenzione, sogliaMargineCritico, defaultFilters } = state.config;
+
+      const clientOptions = state.dati.commesse
+        .map((c) => c.cliente)
+        .filter((value, index, self) => self.indexOf(value) === index) // unique
+        .map((client) => `<option value="${client}" ${defaultFilters.client === client ? 'selected' : ''}>${client}</option>`)
+        .join('');
+
+      fieldsHTML = `
+        <h4 class="text-md font-semibold text-gray-800 border-b pb-2 mb-4">Soglie di Allarme Margine</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Soglia Attenzione (%)</label>
+            <input type="number" name="sogliaMargineAttenzione" class="w-full border rounded-lg px-3 py-2" value="${sogliaMargineAttenzione}" required>
+            <p class="text-xs text-gray-500 mt-1">Sotto questa soglia, il margine è considerato "da attenzionare".</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Soglia Critica (%)</label>
+            <input type="number" name="sogliaMargineCritico" class="w-full border rounded-lg px-3 py-2" value="${sogliaMargineCritico}" required>
+            <p class="text-xs text-gray-500 mt-1">Sotto questa soglia, il margine è "critico".</p>
+          </div>
+        </div>
+
+        <h4 class="text-md font-semibold text-gray-800 border-b pb-2 mb-4">Filtri di Default</h4>
+        <p class="text-sm text-gray-600 mb-4">Imposta i filtri predefiniti che verranno applicati all'avvio e al reset.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
+            <select name="defaultPeriod" class="w-full border rounded-lg px-3 py-2 text-sm"><option value="all" ${defaultFilters.period === 'all' ? 'selected' : ''}>Tutti i periodi</option><option value="current-month" ${
+        defaultFilters.period === 'current-month' ? 'selected' : ''
+      }>Mese corrente</option><option value="current-quarter" ${defaultFilters.period === 'current-quarter' ? 'selected' : ''}>Trimestre corrente</option><option value="current-year" ${
+        defaultFilters.period === 'current-year' ? 'selected' : ''
+      }>Anno corrente</option><option value="last-3-months" ${defaultFilters.period === 'last-3-months' ? 'selected' : ''}>Ultimi 3 mesi</option></select>
+          </div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label><select name="defaultClient" class="w-full border rounded-lg px-3 py-2 text-sm"><option value="all" ${
+            defaultFilters.client === 'all' ? 'selected' : ''
+          }>Tutti i clienti</option>${clientOptions}</select></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Stato</label><select name="defaultStatus" class="w-full border rounded-lg px-3 py-2 text-sm"><option value="all" ${
+            defaultFilters.status === 'all' ? 'selected' : ''
+          }>Tutti gli stati</option><option value="Attivo" ${defaultFilters.status === 'Attivo' ? 'selected' : ''}>Attivo</option><option value="Pianificazione" ${
+        defaultFilters.status === 'Pianificazione' ? 'selected' : ''
+      }>Pianificazione</option><option value="Completato" ${defaultFilters.status === 'Completato' ? 'selected' : ''}>Completato</option><option value="Sospeso" ${defaultFilters.status === 'Sospeso' ? 'selected' : ''}>Sospeso</option></select></div>
+        </div>`;
       break;
   }
 
@@ -217,7 +263,7 @@ export function openModal(type, id = null) {
       fieldsHTML = `
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese</label><input type="month" name="mese" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Consuntivi €</label><input type="number" step="0.01" name="costoConsuntivi" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">HH Consuntivo</label><input type="number" name="hhConsuntivo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">HH Consuntivo</label><input type="number" step="0.01" name="hhConsuntivo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
       break;
   }
 

@@ -218,7 +218,34 @@ export function updateCharts() {
   });
 
   // Margini Chart
-  const marginiData = chartService.getMarginiDistributionData(filteredCommesse);
+  const { sogliaMargineEccellente, sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
+
+  const distributionCategories = {
+    critico: { label: `Critico (<${sogliaMargineCritico}%)`, count: 0 },
+    attenzione: { label: `Attenzione (${sogliaMargineCritico}-${sogliaMargineAttenzione}%)`, count: 0 },
+    buono: { label: `Buono (${sogliaMargineAttenzione}-${sogliaMargineEccellente}%)`, count: 0 },
+    eccellente: { label: `Eccellente (>${sogliaMargineEccellente}%)`, count: 0 },
+  };
+
+  filteredCommesse.forEach((commessa) => {
+    const margine = calcService.calcolaMargineUltimoForecast(commessa.id);
+    if (margine === null) return; // Skip commesse without forecast
+
+    if (margine < sogliaMargineCritico) {
+      distributionCategories.critico.count++;
+    } else if (margine < sogliaMargineAttenzione) {
+      distributionCategories.attenzione.count++;
+    } else if (margine <= sogliaMargineEccellente) {
+      distributionCategories.buono.count++;
+    } else {
+      distributionCategories.eccellente.count++;
+    }
+  });
+
+  const marginiData = {
+    labels: Object.values(distributionCategories).map((c) => c.label),
+    values: Object.values(distributionCategories).map((c) => c.count),
+  };
   const ctx4 = elements.marginiChartCanvas.getContext('2d');
   if (state.charts.marginiChart) state.charts.marginiChart.destroy();
   state.charts.marginiChart = new Chart(ctx4, {

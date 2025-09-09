@@ -81,6 +81,22 @@ export function calcolaMarginRealeCommessa(commessaId) {
   return ((ricaviReali - costiReali) / ricaviReali) * 100;
 }
 
+export function calcolaMargineUltimoForecast(commessaId) {
+  const marginiCommessa = state.dati.margini.filter((m) => m.commessaId === commessaId);
+  if (marginiCommessa.length === 0) {
+    return null;
+  }
+
+  const latestForecast = marginiCommessa.reduce((latest, current) => (current.mese > latest.mese ? current : latest));
+
+  const ricavoConsuntivoUltimoMese = calcolaMontanteFattureFinoAlMese(commessaId, latestForecast.mese);
+
+  if (ricavoConsuntivoUltimoMese > 0) {
+    return ((ricavoConsuntivoUltimoMese - latestForecast.costoConsuntivi) / ricavoConsuntivoUltimoMese) * 100;
+  }
+  return 0;
+}
+
 export function getBudgetMasterData(commessaId) {
   const budgetMasters = state.dati.budgetMaster?.filter((bm) => bm.commessaId === commessaId) || [];
 
@@ -100,6 +116,37 @@ export function calcolaTotaleOrdini(commessaId) {
 
 export function calcolaMontanteFatture(commessaId) {
   return state.dati.fatture.filter((f) => f.commessaId === commessaId).reduce((sum, f) => sum + f.importo, 0);
+}
+
+export function calcolaMontanteFattureFinoAlMese(commessaId, mese) {
+  return state.dati.fatture.filter((f) => f.commessaId === commessaId && f.meseCompetenza <= mese).reduce((sum, f) => sum + f.importo, 0);
+}
+
+/**
+ * Returns a user-friendly description of a date range for tooltips.
+ * @param {string} periodFilter - The filter that generated the range.
+ * @param {Date} startDate - The start date of the period.
+ * @param {Date} endDate - The end date of the period.
+ * @returns {string}
+ */
+export function getPeriodDescription(periodFilter, startDate, endDate) {
+  const startMonth = startDate.toLocaleString('it-IT', { month: 'long' });
+  const startYear = startDate.getFullYear();
+
+  switch (periodFilter) {
+    case 'current-month':
+      return `${startMonth.charAt(0).toUpperCase() + startMonth.slice(1)} ${startYear}`;
+    case 'current-quarter':
+      const endMonth = endDate.toLocaleString('it-IT', { month: 'long' });
+      return `trimestre ${startMonth} - ${endMonth} ${startYear}`;
+    case 'current-year':
+      return `l'anno ${startYear}`;
+    case 'last-3-months':
+      const endMonth3m = endDate.toLocaleString('it-IT', { month: 'long' });
+      return `3 mesi da ${startMonth} a ${endMonth3m} ${startYear}`;
+    default:
+      return '';
+  }
 }
 
 /**

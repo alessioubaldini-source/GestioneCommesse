@@ -29,6 +29,11 @@ export const state = {
     sogliaMargineAttenzione: 35,
     sogliaMargineCritico: 30,
     sogliaMargineEccellente: 45,
+    defaultFilters: {
+      period: 'all',
+      client: 'all',
+      status: 'all',
+    },
   },
   calendar: {
     currentDate: new Date(),

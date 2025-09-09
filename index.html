@@ -59,13 +59,10 @@
         <div class="flex justify-between items-center py-4">
           <div class="flex items-center gap-3">
             <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M20.25 14.15v4.07a2.25 2.25 0 01-2.25 2.25H5.998a2.25 2.25 0 01-2.25-2.25v-4.07a2.25 2.25 0 01.52-1.495L4.5 9.55a2.25 2.25 0 011.495-2.002h9.01a2.25 2.25 0 011.495 2.002l.23 2.105a2.25 2.25 0 01.52 1.495z"
-                />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9.55v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A3.375 3.375 0 007.5 6.925v2.625" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20V10" stroke="#3b82f6" stroke-width="3"></path>
+                <path d="M18 20V4" stroke="#16a34a" stroke-width="3"></path>
+                <path d="M6 20V16" stroke="#8b5cf6" stroke-width="3"></path>
               </svg>
             </div>
             <h1 class="text-xl md:text-2xl font-bold text-gray-900">Gestionale Commesse</h1>
@@ -84,6 +81,16 @@
               Esporta
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+            </button>
+            <button id="settings-btn" data-modal-type="settings" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800" title="Impostazioni">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.48.398.668 1.05.26 1.431l-1.296 2.247a1.125 1.125 0 01-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.127c-.331.183-.581.495-.644.87l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.37-.49l-1.296-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 01-.26-1.431l1.296-2.247a1.125 1.125 0 011.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.127.332-.183.582-.495.644-.87l.213-1.281z"
+                />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </button>
           </div>
@@ -335,6 +342,19 @@
                 Gestione Commesse
               </h3>
               <div class="flex items-center gap-4">
+                <button id="download-template-btn" class="text-sm font-medium text-green-600 hover:text-green-800 flex items-center gap-1" title="Scarica il template per l'importazione di una nuova commessa">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  Template
+                </button>
+                <button id="import-commessa-btn" class="text-sm font-medium text-purple-600 hover:text-purple-800 flex items-center gap-1" title="Importa una nuova commessa da un file Excel">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                  </svg>
+                  Importa
+                </button>
+                <input type="file" id="import-file-input" class="hidden" accept=".xlsx, .xls" />
                 <div class="relative">
                   <input type="text" id="commesse-search" placeholder="Cerca commesse..." class="pl-8 pr-4 py-2 border rounded-lg text-sm" />
                   <svg class="absolute left-2 top-3 h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -614,7 +634,7 @@
                   <p><strong>Costo Cons.:</strong> Costo totale registrato per il mese.</p>
                   <p><strong>HH Cons.:</strong> Ore totali registrate per il mese.</p>
                   <p><strong>Costo/HH:</strong> Costo medio orario (Costo Cons. / HH Cons.).</p>
-                  <p><strong>Ricavo Cons.:</strong> Totale fatturato per la commessa fino ad oggi.</p>
+                  <p><strong>Ricavo Cons.:</strong> Totale fatturato per la commessa fino al mese del record.</p>
                   <p><strong>Margine %:</strong> (Ricavo Cons. - Costo Cons.) / Ricavo Cons.</p>
                   <p><strong>Ricavo Budget Tot:</strong> Valore dell'ultimo budget approvato per la commessa.</p>
                   <p><strong>Costo Budget (EAC):</strong> Stima del costo totale a finire (Estimate At Completion). Calcolato come: Ricavo Budget Tot * (1 - Margine %).</p>

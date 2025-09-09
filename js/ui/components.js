@@ -26,24 +26,35 @@ function animateCountUp(element, endValue, isCurrency = true) {
 export function updateKPI() {
   // Get commesse filtered by client, status, search. The period filter here is now only for the list of commesse, not the KPIs.
   const filteredCommesse = calcService.getFilteredCommesse();
-  const filteredCommesseIds = new Set(filteredCommesse.map((c) => c.id));
+  const allFilteredCommesseIds = new Set(filteredCommesse.map((c) => c.id));
 
   // --- CURRENT PERIOD KPIs ---
   // The main KPIs are now correctly calculated based on the financial data's date, not the project start date.
   const { startDate: currentStartDate, endDate: currentEndDate } = calcService.getPeriodDateRange(state.filters.period);
-  const { ricavi: totalRicavi, costi: totalCosti } = calcService.calculateKpisForPeriod(filteredCommesseIds, currentStartDate, currentEndDate);
 
-  const margineAssoluto = totalRicavi - totalCosti;
-  const marginePerc = totalRicavi > 0 ? (margineAssoluto / totalRicavi) * 100 : 0;
+  // Calculate KPIs for ALL filtered commesse (for Ricavi, Costi cards)
+  const { ricavi: totalRicavi, costi: totalCosti } = calcService.calculateKpisForPeriod(allFilteredCommesseIds, currentStartDate, currentEndDate);
+
+  // --- MARGINE MEDIO CALCULATION ---
+  // Calculate the average of the latest forecast margin for each project.
+  // This excludes projects without any forecast data.
+  const individualMargins = filteredCommesse.map((commessa) => calcService.calcolaMargineUltimoForecast(commessa.id)).filter((margine) => margine !== null);
+
+  let marginePerc = 0;
+  if (individualMargins.length > 0) {
+    const sumOfMargins = individualMargins.reduce((sum, current) => sum + current, 0);
+    marginePerc = sumOfMargins / individualMargins.length;
+  }
+
   const commesseAttive = filteredCommesse.filter((c) => c.stato === 'Attivo').length;
 
   // Calcolo fatturato mensile corrente per le commesse filtrate
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const fatturatoMensile = state.dati.fatture.filter((f) => f.meseCompetenza === currentMonth && filteredCommesseIds.has(f.commessaId)).reduce((sum, f) => sum + f.importo, 0);
+  const fatturatoMensile = state.dati.fatture.filter((f) => f.meseCompetenza === currentMonth && allFilteredCommesseIds.has(f.commessaId)).reduce((sum, f) => sum + f.importo, 0);
 
   animateCountUp(elements.totalRicavi, totalRicavi);
   animateCountUp(elements.totalCosti, totalCosti);
-  elements.margineMedio.textContent = marginePerc.toFixed(1) + '%';
+  elements.margineMedio.textContent = marginePerc.toFixed(2) + '%';
   animateCountUp(elements.commesseAttive, commesseAttive, false);
   elements.fatturatoMensile.textContent = `Fatturato mese: ${utils.formatCurrency(fatturatoMensile)}`;
 
@@ -64,9 +75,13 @@ export function updateKPI() {
   const { startDate: prevStartDate, endDate: prevEndDate } = calcService.getPreviousPeriodDateRange(state.filters.period) || {};
   let ricaviTrendHTML = 'N/A';
   let costiTrendHTML = 'N/A';
+  let tooltipText = 'Nessun confronto per il periodo selezionato'; // Default tooltip
 
   if (prevStartDate && prevEndDate) {
-    const prevKpis = calcService.calculateKpisForPeriod(filteredCommesseIds, prevStartDate, prevEndDate);
+    const prevPeriodDescription = calcService.getPeriodDescription(state.filters.period, prevStartDate, prevEndDate);
+    tooltipText = `Confronto con: ${prevPeriodDescription}`;
+
+    const prevKpis = calcService.calculateKpisForPeriod(allFilteredCommesseIds, prevStartDate, prevEndDate);
 
     // Ricavi Trend
     if (prevKpis.ricavi > 0) {
@@ -86,8 +101,15 @@ export function updateKPI() {
       costiTrendHTML = '↗️ N/A vs periodo prec.';
     }
   }
-  elements.ricaviTrend.textContent = ricaviTrendHTML;
-  elements.costiTrend.textContent = costiTrendHTML;
+
+  if (elements.ricaviTrend) {
+    elements.ricaviTrend.textContent = ricaviTrendHTML;
+    elements.ricaviTrend.title = tooltipText;
+  }
+  if (elements.costiTrend) {
+    elements.costiTrend.textContent = costiTrendHTML;
+    elements.costiTrend.title = tooltipText;
+  }
 }
 
 export function updateCommesseMonitorate() {
@@ -101,8 +123,8 @@ export function updateCommesseMonitorate() {
 
   filteredCommesse.forEach((commessa) => {
     // Calcola entrambi i potenziali problemi
-    const margineReale = calcService.calcolaMarginRealeCommessa(commessa.id);
-    const haMargineBasso = margineReale < sogliaAttenzione;
+    const margineReale = calcService.calcolaMargineUltimoForecast(commessa.id);
+    const haMargineBasso = margineReale !== null && margineReale < sogliaAttenzione;
 
     const montante = calcService.calcolaMontanteFatture(commessa.id);
     const totaleOrdini = calcService.calcolaTotaleOrdini(commessa.id);
@@ -153,7 +175,7 @@ export function updateCommesseMonitorate() {
         const label = isMarginCritical ? `Critico (<${sogliaCritico}%)` : `Attenzione (<${sogliaAttenzione}%)`;
         alertMargineHTML = `
             <div class="text-right">
-                <p class="font-bold text-lg ${textColor}">${margine.toFixed(1)}%</p>
+                <p class="font-bold text-lg ${textColor}">${margine.toFixed(2)}%</p>
                 <p class="text-xs ${textColor}">${label}</p>
             </div>`;
       }
@@ -232,31 +254,35 @@ export function updateCommessaHeader() {
   const commessa = state.dati.commesse.find((c) => c.id === state.selectedCommessa);
   if (!commessa) return;
 
-  // Correzione: Calcolo i ricavi basandomi sulle fatture reali invece che sul budget totale per questo header.
-  // Questo rende i KPI (Ricavi e Margine) in questa sezione coerenti tra loro.
+  // "Ricavi Fatturati" rimane il totale per la commessa
   const ricaviReali = calcService.calcolaMontanteFatture(commessa.id);
-  const costiReali = state.dati.margini.filter((m) => m.commessaId === commessa.id).reduce((sum, m) => sum + m.costoConsuntivi, 0);
-  const margineReale = ricaviReali > 0 ? ((ricaviReali - costiReali) / ricaviReali) * 100 : 0;
+  // Usa il margine dell'ultimo forecast per coerenza con il resto dell'app
+  const margineUltimoForecast = calcService.calcolaMargineUltimoForecast(commessa.id);
 
   elements.selectedCliente.textContent = commessa.cliente;
   elements.selectedStato.innerHTML = `<span class="inline-block px-2 py-1 text-xs rounded-full ${
     commessa.stato === 'Attivo' ? 'bg-green-100 text-green-800' : commessa.stato === 'Completato' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
   }">${commessa.stato}</span>`;
   elements.selectedBudget.textContent = utils.formatCurrency(ricaviReali);
-  elements.selectedMargine.textContent = margineReale.toFixed(1) + '%';
 
   // Dynamic color for margin in header
   const margineElement = elements.selectedMargine;
-  const { sogliaMargineEccellente, sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
   margineElement.classList.remove('text-green-300', 'text-blue-300', 'text-yellow-300', 'text-red-300');
-  if (margineReale > sogliaMargineEccellente) {
-    margineElement.classList.add('text-green-300'); // Eccellente
-  } else if (margineReale >= sogliaMargineAttenzione) {
-    margineElement.classList.add('text-blue-300'); // Buono
-  } else if (margineReale >= sogliaMargineCritico) {
-    margineElement.classList.add('text-yellow-300'); // Attenzione
+
+  if (margineUltimoForecast !== null) {
+    margineElement.textContent = margineUltimoForecast.toFixed(2) + '%';
+    const { sogliaMargineEccellente, sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
+    if (margineUltimoForecast > sogliaMargineEccellente) {
+      margineElement.classList.add('text-green-300'); // Eccellente
+    } else if (margineUltimoForecast >= sogliaMargineAttenzione) {
+      margineElement.classList.add('text-blue-300'); // Buono
+    } else if (margineUltimoForecast >= sogliaMargineCritico) {
+      margineElement.classList.add('text-yellow-300'); // Attenzione
+    } else {
+      margineElement.classList.add('text-red-300'); // Critico
+    }
   } else {
-    margineElement.classList.add('text-red-300'); // Critico
+    margineElement.textContent = 'N/A';
   }
 }
 

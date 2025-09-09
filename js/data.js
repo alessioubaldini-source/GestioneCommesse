@@ -4,7 +4,29 @@ import { showToast } from './notifications.js';
 import { state } from './state.js';
 import { generateId } from './utils.js';
 
+function loadConfig() {
+  const savedConfig = localStorage.getItem('gestionaleConfig');
+  if (savedConfig) {
+    try {
+      const parsedConfig = JSON.parse(savedConfig);
+      // Merge saved config with defaults to ensure new properties are added
+      state.config = { ...state.config, ...parsedConfig };
+    } catch (e) {
+      console.error('Error parsing saved config, using defaults.', e);
+    }
+  }
+  // Apply default filters to the active filters at startup
+  state.filters.period = state.config.defaultFilters.period || 'all';
+  state.filters.client = state.config.defaultFilters.client || 'all';
+  state.filters.status = state.config.defaultFilters.status || 'all';
+}
+
+export function saveConfig() {
+  localStorage.setItem('gestionaleConfig', JSON.stringify(state.config));
+}
+
 export function loadData() {
+  loadConfig();
   const savedData = localStorage.getItem('gestionaleCommesseData');
   if (savedData) {
     try {
@@ -125,7 +147,7 @@ export function saveForm(formData) {
             ...state.dati.margini[margineIndex],
             ...formData,
             costoConsuntivi: parseFloat(formData.costoConsuntivi),
-            hhConsuntivo: parseInt(formData.hhConsuntivo),
+            hhConsuntivo: parseFloat(formData.hhConsuntivo),
           };
         }
         break;
@@ -185,7 +207,7 @@ export function saveForm(formData) {
         state.dati.fatture.push(newFattura);
         break;
       case 'margine':
-        const newMargine = { id: generateId(state.dati.margini), commessaId: selectedCommessa, ...formData, costoConsuntivi: parseFloat(formData.costoConsuntivi), hhConsuntivo: parseInt(formData.hhConsuntivo) };
+        const newMargine = { id: generateId(state.dati.margini), commessaId: selectedCommessa, ...formData, costoConsuntivi: parseFloat(formData.costoConsuntivi), hhConsuntivo: parseFloat(formData.hhConsuntivo) };
         state.dati.margini.push(newMargine);
         break;
     }

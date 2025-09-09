@@ -51,26 +51,3 @@ export function getBudgetVsConsuntivoData(commesse) {
     consuntivo: data.map((d) => d.consuntivo),
   };
 }
-
-export function getMarginiDistributionData(commesse) {
-  const { sogliaMargineCritico, sogliaMargineAttenzione, sogliaMargineEccellente } = state.config;
-
-  const rangeLabels = {
-    critico: `Critico (< ${sogliaMargineCritico}%)`,
-    attenzione: `Attenzione (${sogliaMargineCritico}-${sogliaMargineAttenzione}%)`,
-    buono: `Buono (${sogliaMargineAttenzione}-${sogliaMargineEccellente}%)`,
-    eccellente: `Eccellente (> ${sogliaMargineEccellente}%)`,
-  };
-
-  const ranges = { [rangeLabels.critico]: 0, [rangeLabels.attenzione]: 0, [rangeLabels.buono]: 0, [rangeLabels.eccellente]: 0 };
-
-  commesse.forEach((commessa) => {
-    const margine = calcolaMarginRealeCommessa(commessa.id);
-    if (margine < sogliaMargineCritico) ranges[rangeLabels.critico]++;
-    else if (margine < sogliaMargineAttenzione) ranges[rangeLabels.attenzione]++;
-    else if (margine < sogliaMargineEccellente) ranges[rangeLabels.buono]++;
-    else ranges[rangeLabels.eccellente]++;
-  });
-
-  return { labels: Object.keys(ranges), values: Object.values(ranges) };
-}

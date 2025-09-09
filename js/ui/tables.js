@@ -44,7 +44,13 @@ export function sortCommesseTable(sortBy) {
       case 'ricavi':
         return calcService.calcolaMontanteFatture(b.id) - calcService.calcolaMontanteFatture(a.id);
       case 'margine':
-        return calcService.calcolaMarginRealeCommessa(b.id) - calcService.calcolaMarginRealeCommessa(a.id);
+        const margineA = calcService.calcolaMargineUltimoForecast(a.id);
+        const margineB = calcService.calcolaMargineUltimoForecast(b.id);
+        // Treat commesse with no forecast as having the lowest priority in sorting
+        if (margineA === null && margineB === null) return 0;
+        if (margineA === null) return 1; // a is greater (comes last)
+        if (margineB === null) return -1; // b is greater (comes last)
+        return margineB - margineA; // Sort descending by margin
       case 'data':
         return new Date(a.dataInizio) - new Date(b.dataInizio);
       default:
@@ -75,8 +81,9 @@ export function updateTables() {
     elements.commesseTable.innerHTML = paginatedCommesse
       .map((commessa) => {
         const ricaviReali = calcService.calcolaMontanteFatture(commessa.id);
-        const margineReale = calcService.calcolaMarginRealeCommessa(commessa.id);
-        const margineClass = margineReale < state.config.sogliaMargineAttenzione ? 'text-red-600 font-bold alert-warning' : 'text-green-600';
+        const margineReale = calcService.calcolaMargineUltimoForecast(commessa.id);
+        const margineText = margineReale !== null ? `${margineReale.toFixed(2)}%` : 'N/A';
+        const margineClass = margineReale !== null && margineReale < state.config.sogliaMargineAttenzione ? 'text-red-600 font-bold alert-warning' : 'text-green-600';
 
         return `
               <tr class="hover:bg-gray-50">
@@ -89,7 +96,7 @@ export function updateTables() {
                     commessa.stato === 'Attivo' ? 'bg-green-100 text-green-800' : commessa.stato === 'Completato' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                   }">${commessa.stato}</span></td>
                   <td class="px-4 py-3 text-sm text-right">${utils.formatCurrency(ricaviReali)}</td>
-                  <td class="px-4 py-3 text-sm text-right ${margineClass}">${margineReale.toFixed(1)}%</td>
+                  <td class="px-4 py-3 text-sm text-right ${margineClass}">${margineText}</td>
                   <td class="px-4 py-3 text-center">
                     <div class="flex items-center justify-center gap-2">
                       <button data-action="edit" data-id="${commessa.id}" class="text-blue-600 hover:text-blue-800" title="Modifica">
@@ -134,6 +141,7 @@ function renderBudgetTable(commessaId) {
   if (budgetMasterData.length === 0) {
     budgetHTML = createEmptyStateHTML('Nessun budget definito per questa commessa.', 'Aggiungi Budget', 'budget');
   } else {
+    budgetMasterData.sort((a, b) => b.meseCompetenza.localeCompare(a.meseCompetenza));
     budgetMasterData.forEach((master) => {
       budgetHTML += `
               <tr class="bg-blue-50 border-b-2 border-blue-200">
@@ -192,6 +200,7 @@ function renderBudgetTable(commessaId) {
 function renderOrdiniTable(commessaId) {
   const ordiniCommessa = state.dati.ordini.filter((o) => o.commessaId === commessaId);
   if (ordiniCommessa.length > 0) {
+    ordiniCommessa.sort((a, b) => b.data.localeCompare(a.data));
     elements.ordiniTable.innerHTML = ordiniCommessa
       .map(
         (ordine) => `
@@ -221,6 +230,7 @@ function renderOrdiniTable(commessaId) {
 function renderFattureTable(commessaId) {
   const fattureCommessa = state.dati.fatture.filter((f) => f.commessaId === commessaId);
   if (fattureCommessa.length > 0) {
+    fattureCommessa.sort((a, b) => b.meseCompetenza.localeCompare(a.meseCompetenza));
     elements.fattureTable.innerHTML = fattureCommessa
       .map(
         (fattura) => `
@@ -277,36 +287,40 @@ function renderFattureTable(commessaId) {
 function renderMarginiTable(commessaId) {
   const marginiCommessa = state.dati.margini.filter((m) => m.commessaId === commessaId);
 
-  // Alert for low margin
-  const margineReale = calcService.calcolaMarginRealeCommessa(commessaId);
-  const { sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
   const alertContainer = elements.margineAlert;
   alertContainer.classList.add('hidden'); // Hide by default
 
-  if (margineReale < sogliaMargineAttenzione) {
-    const isCritical = margineReale < sogliaMargineCritico;
-    const bgColor = isCritical ? 'bg-red-100' : 'bg-yellow-100';
-    const textColor = isCritical ? 'text-red-800' : 'text-yellow-800';
-    const iconColor = isCritical ? 'text-red-500' : 'text-yellow-500';
-    const message = isCritical
-      ? `Attenzione: il margine reale (${margineReale.toFixed(1)}%) è a un livello critico (sotto il ${sogliaMargineCritico}%).`
-      : `Attenzione: il margine reale (${margineReale.toFixed(1)}%) è sotto la soglia di attenzione (${sogliaMargineAttenzione}%).`;
+  // Alert for low margin based on the LATEST forecast record
+  const margineUltimoForecast = calcService.calcolaMargineUltimoForecast(commessaId);
+  if (margineUltimoForecast !== null) {
+    const { sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
+    if (margineUltimoForecast < sogliaMargineAttenzione) {
+      const isCritical = margineUltimoForecast < sogliaMargineCritico;
+      const bgColor = isCritical ? 'bg-red-100' : 'bg-yellow-100';
+      const textColor = isCritical ? 'text-red-800' : 'text-yellow-800';
+      const iconColor = isCritical ? 'text-red-500' : 'text-yellow-500';
+      const latestForecastMonth = marginiCommessa.reduce((latest, current) => (current.mese > latest.mese ? current : latest)).mese;
+      const message = isCritical
+        ? `Attenzione: il margine dell'ultimo forecast (${latestForecastMonth}) è ${margineUltimoForecast.toFixed(2)}%, a un livello critico (sotto il ${sogliaMargineCritico}%).`
+        : `Attenzione: il margine dell'ultimo forecast (${latestForecastMonth}) è ${margineUltimoForecast.toFixed(2)}%, sotto la soglia di attenzione (${sogliaMargineAttenzione}%).`;
 
-    alertContainer.innerHTML = `
-      <div class="flex items-center ${textColor} ${bgColor} p-3 rounded-md">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 shrink-0 ${iconColor}" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M8.257 3.099c.636-1.21 2.37-1.21 3.006 0l5.25 10.002c.636 1.21-.24 2.649-1.503 2.649H4.5c-1.263 0-2.139-1.439-1.503-2.649l5.25-10.002zM10 12a1 1 0 110-2 1 1 0 010 2zm0-3a1 1 0 00-1 1v1a1 1 0 102 0v-1a1 1 0 00-1-1z" clip-rule="evenodd" />
-        </svg>
-        <span>${message}</span>
-      </div>
-    `;
-    alertContainer.classList.remove('hidden');
+      alertContainer.innerHTML = `
+        <div class="flex items-center ${textColor} ${bgColor} p-3 rounded-md">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 shrink-0 ${iconColor}" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.636-1.21 2.37-1.21 3.006 0l5.25 10.002c.636 1.21-.24 2.649-1.503 2.649H4.5c-1.263 0-2.139-1.439-1.503-2.649l5.25-10.002zM10 12a1 1 0 110-2 1 1 0 010 2zm0-3a1 1 0 00-1 1v1a1 1 0 102 0v-1a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      alertContainer.classList.remove('hidden');
+    }
   }
 
   if (marginiCommessa.length > 0) {
+    marginiCommessa.sort((a, b) => b.mese.localeCompare(a.mese));
     elements.marginiTable.innerHTML = marginiCommessa
       .map((margine) => {
-        const ricavoConsuntivo = calcService.calcolaMontanteFatture(commessaId);
+        const ricavoConsuntivo = calcService.calcolaMontanteFattureFinoAlMese(commessaId, margine.mese);
         const costoMedioHH = margine.hhConsuntivo > 0 ? margine.costoConsuntivi / margine.hhConsuntivo : 0;
         const marginePerc = ricavoConsuntivo > 0 ? ((ricavoConsuntivo - margine.costoConsuntivi) / ricavoConsuntivo) * 100 : 0;
 
@@ -322,15 +336,15 @@ function renderMarginiTable(commessaId) {
                     <tr class="hover:bg-gray-50">
                         <td class="px-2 py-3 font-medium text-xs">${margine.mese}</td>
                         <td class="px-2 py-3 text-center text-blue-600 font-medium text-xs">${utils.formatCurrency(margine.costoConsuntivi)}</td>
-                        <td class="px-2 py-3 text-center text-blue-600 font-medium text-xs">${margine.hhConsuntivo}</td>
+                        <td class="px-2 py-3 text-center text-blue-600 font-medium text-xs">${margine.hhConsuntivo.toFixed(2)}</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(costoMedioHH)}</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoConsuntivo)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${marginePerc.toFixed(1)}%</td>
+                        <td class="px-2 py-3 text-center text-xs">${marginePerc.toFixed(2)}%</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoBudgetTotale)}</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(costoBudgetTotaleEAC)}</td>
                         <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${utils.formatCurrency(costoStimaAFinireETC)}</td>
-                        <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${oreStimaAFinireETC.toFixed(0)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${percentualeAvanzamentoCosti.toFixed(1)}%</td>
+                        <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${oreStimaAFinireETC.toFixed(2)}</td>
+                        <td class="px-2 py-3 text-center text-xs">${percentualeAvanzamentoCosti.toFixed(2)}%</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoMaturato)}</td>
                         <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(etcRevenue)}</td>
                         <td class="px-2 py-3 text-center">

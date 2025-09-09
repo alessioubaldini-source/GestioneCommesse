@@ -57,4 +57,8 @@ export const elements = {
   sortCommesse: document.getElementById('sort-commesse'),
   exportExcel: document.getElementById('export-excel'),
   resetFilters: document.getElementById('reset-filters'),
+  downloadTemplateBtn: document.getElementById('download-template-btn'),
+  importCommessaBtn: document.getElementById('import-commessa-btn'),
+  importFileInput: document.getElementById('import-file-input'),
+  settingsBtn: document.getElementById('settings-btn'),
 };

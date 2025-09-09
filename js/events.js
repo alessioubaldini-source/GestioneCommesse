@@ -6,6 +6,7 @@ import { elements } from './dom.js';
 import * as ui from './ui.js';
 import * as data from './data.js';
 import { exportToExcel } from './services/excelExportService.js';
+import * as excelImportService from './services/excelImportService.js';
 
 export function initEventListeners() {
   // Tab navigation
@@ -52,16 +53,30 @@ export function initEventListeners() {
 
   elements.resetFilters.addEventListener('click', () => {
     state.pagination.commesse.currentPage = 1;
-    state.filters = { period: 'all', client: 'all', status: 'all', search: '' };
-    elements.periodFilter.value = 'all';
-    elements.clientFilter.value = 'all';
-    elements.statusFilter.value = 'all';
+    // Reset to configured defaults, not hardcoded 'all'
+    state.filters.period = state.config.defaultFilters.period;
+    state.filters.client = state.config.defaultFilters.client;
+    state.filters.status = state.config.defaultFilters.status;
+    state.filters.search = ''; // Search always resets to empty
+
     elements.globalSearch.value = '';
     ui.applyFilters();
   });
 
   // Export Excel
   elements.exportExcel.addEventListener('click', () => exportToExcel());
+
+  // Import from Excel
+  elements.downloadTemplateBtn?.addEventListener('click', () => {
+    excelImportService.downloadImportTemplate();
+  });
+  elements.importCommessaBtn?.addEventListener('click', () => {
+    elements.importFileInput.click();
+  });
+  elements.importFileInput?.addEventListener('change', (e) => {
+    excelImportService.importCommessaFromExcel(e.target.files[0]);
+    e.target.value = ''; // Reset input to allow re-importing the same file
+  });
 
   // Modal events
   document.body.addEventListener('click', (e) => {
@@ -99,19 +114,6 @@ export function initEventListeners() {
       ui.updateCommessaSelect();
       ui.updateCommessaHeader();
       ui.updateCommessaSpecificTables();
-    }
-
-    // Calendar navigation
-    const prevBtn = e.target.closest('#prev-month-btn');
-    const nextBtn = e.target.closest('#next-month-btn');
-
-    if (prevBtn) {
-      state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() - 1);
-      ui.update(); // A full update will re-render everything, including the calendar
-    }
-    if (nextBtn) {
-      state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() + 1);
-      ui.update();
     }
   });
 
@@ -200,6 +202,19 @@ export function initEventListeners() {
 
       data.saveActivityRules(newRules);
       showToast('Regole del calendario aggiornate!', 'success');
+      ui.closeModal();
+      ui.update();
+    } else if (state.currentModalType === 'settings') {
+      state.config.sogliaMargineAttenzione = parseInt(dataObject.sogliaMargineAttenzione, 10);
+      state.config.sogliaMargineCritico = parseInt(dataObject.sogliaMargineCritico, 10);
+      state.config.defaultFilters.period = dataObject.defaultPeriod;
+      state.config.defaultFilters.client = data.defaultClient;
+      state.config.defaultFilters.status = dataObject.defaultStatus;
+
+      data.saveConfig();
+      showToast('Impostazioni salvate con successo!', 'success');
+      ui.closeModal();
+      ui.update(); // Update UI to reflect new thresholds
     } else {
       const isEditing = state.editingId !== null;
 
