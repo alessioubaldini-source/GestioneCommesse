@@ -9,6 +9,7 @@ export const state = {
     period: 'all',
     client: 'all',
     status: 'all',
+    tipologia: 'all',
     search: '',
   },
   charts: {
@@ -33,6 +34,7 @@ export const state = {
       period: 'all',
       client: 'all',
       status: 'all',
+      tipologia: 'all',
     },
   },
   calendar: {

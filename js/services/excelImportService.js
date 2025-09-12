@@ -63,52 +63,56 @@ export function downloadImportTemplate() {
 
     // Sheet: Info Commessa
     const infoData = [
-      ['Nome Commessa', 'Cliente', 'Data Inizio (DD/MM/YYYY)', 'Stato'],
-      ['Nuovo Progetto Fantastico', 'Nuovo Cliente SPA', '01/10/2024', 'Pianificazione'],
+      ['Nome Commessa', 'Cliente', 'Data Inizio (DD/MM/YYYY)', 'Stato', 'Tipologia'],
+      ['Nuovo Progetto Fantastico', 'Nuovo Cliente SPA', '01/10/2024', 'Pianificazione', 'T&M'],
+      ['Manutenzione Sistema Legacy', 'Cliente Esistente SRL', '01/01/2024', 'Attivo', 'Canone'],
     ];
     const infoWS = XLSX.utils.aoa_to_sheet(infoData);
-    infoWS['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 25 }, { wch: 15 }];
+    infoWS['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }];
     XLSX.utils.book_append_sheet(wb, infoWS, TEMPLATE_SHEETS.INFO);
 
     // Sheet: Budget
     const budgetData = [
-      ['ID Budget', 'Mese Competenza (YYYY-MM)', 'Figura', 'Tariffa', 'Giorni', 'Importo Totale (se non dettagliato)'],
-      ['BUDGET_01', '2024-10', 'Senior Developer', 500, 20],
-      ['BUDGET_01', '2024-10', 'Junior Developer', 300, 15],
-      ['BUDGET_02', '2024-11', '', '', '', 50000],
+      ['Nome Commessa', 'ID Budget', 'Mese Competenza (YYYY-MM)', 'Figura', 'Tariffa', 'Giorni', 'Importo Totale (se non dettagliato)'],
+      ['Nuovo Progetto Fantastico', 'BUDGET_01', '2024-10', 'Senior Developer', 500, 20, ''],
+      ['Nuovo Progetto Fantastico', 'BUDGET_01', '2024-10', 'Junior Developer', 300, 15, ''],
+      ['Manutenzione Sistema Legacy', 'BUDGET_02', '2024-11', '', '', '', 50000],
     ];
     const budgetWS = XLSX.utils.aoa_to_sheet(budgetData);
-    budgetWS['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 30 }];
+    budgetWS['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 30 }];
     XLSX.utils.book_append_sheet(wb, budgetWS, TEMPLATE_SHEETS.BUDGET);
 
     // Sheet: Ordini
     const ordiniData = [
-      ['Numero Ordine', 'Data (DD/MM/YYYY)', 'Importo'],
-      ['ORD-2024-XYZ', '15/09/2024', 50000],
+      ['Nome Commessa', 'Numero Ordine', 'Data (DD/MM/YYYY)', 'Importo'],
+      ['Nuovo Progetto Fantastico', 'ORD-2024-XYZ', '15/09/2024', 50000],
+      ['Manutenzione Sistema Legacy', 'ORD-2024-ABC', '10/01/2024', 75000],
     ];
     const ordiniWS = XLSX.utils.aoa_to_sheet(ordiniData);
-    ordiniWS['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 15 }];
+    ordiniWS['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 15 }];
     XLSX.utils.book_append_sheet(wb, ordiniWS, TEMPLATE_SHEETS.ORDINI);
 
     // Sheet: Fatture
     const fattureData = [
-      ['Mese Competenza (YYYY-MM)', 'Data Invio Consuntivo (DD/MM/YYYY)', 'Importo'],
-      ['2024-10', '05/11/2024', 25000],
+      ['Nome Commessa', 'Mese Competenza (YYYY-MM)', 'Data Invio Consuntivo (DD/MM/YYYY)', 'Importo'],
+      ['Nuovo Progetto Fantastico', '2024-10', '05/11/2024', 25000],
+      ['Manutenzione Sistema Legacy', '2024-01', '05/02/2024', 6000],
     ];
     const fattureWS = XLSX.utils.aoa_to_sheet(fattureData);
-    fattureWS['!cols'] = [{ wch: 25 }, { wch: 35 }, { wch: 15 }];
+    fattureWS['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 35 }, { wch: 15 }];
     XLSX.utils.book_append_sheet(wb, fattureWS, TEMPLATE_SHEETS.FATTURE);
 
     // Sheet: Forecast
     const forecastData = [
-      ['Mese (YYYY-MM)', 'Costo Consuntivi', 'HH Consuntivo'],
-      ['2024-10', 18000, 300],
+      ['Nome Commessa', 'Mese (YYYY-MM)', 'Costo Consuntivi', 'HH Consuntivo'],
+      ['Nuovo Progetto Fantastico', '2024-10', 18000, 300],
+      ['Manutenzione Sistema Legacy', '2024-01', 5000, 100],
     ];
     const forecastWS = XLSX.utils.aoa_to_sheet(forecastData);
-    forecastWS['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 20 }];
+    forecastWS['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, forecastWS, TEMPLATE_SHEETS.FORECAST);
 
-    XLSX.writeFile(wb, 'Template_Import_Commessa.xlsx');
+    XLSX.writeFile(wb, 'Template_Import_Commesse.xlsx');
     showToast('Template scaricato con successo!', 'success');
   } catch (error) {
     console.error('Errore durante la creazione del template:', error);
@@ -133,18 +137,35 @@ export async function importCommessaFromExcel(file) {
     if (!infoSheet) throw new Error(`Sheet "${TEMPLATE_SHEETS.INFO}" non trovata.`);
     const infoData = XLSX.utils.sheet_to_json(infoSheet, { header: 1 });
     if (infoData.length < 2) throw new Error(`Sheet "${TEMPLATE_SHEETS.INFO}" non contiene dati.`);
-    const commessaInfo = {
-      nome: infoData[1][0],
-      cliente: infoData[1][1],
-      dataInizio: parseAndFormatDate(infoData[1][2]),
-      stato: infoData[1][3],
-    };
-    if (!commessaInfo.nome || !commessaInfo.cliente || !commessaInfo.dataInizio || !commessaInfo.stato) {
-      throw new Error('Dati mancanti o non validi nella sheet "Info Commessa".');
+
+    // --- 2. Create New Commesse ---
+    const newCommesse = [];
+    const commesseMap = new Map(); // Map<commessaName, commessaObject>
+    for (let i = 1; i < infoData.length; i++) {
+      const row = infoData[i];
+      const commessaInfo = {
+        nome: row[0],
+        cliente: row[1],
+        dataInizio: parseAndFormatDate(row[2]),
+        stato: row[3],
+        tipologia: ['T&M', 'Corpo', 'Canone'].includes(row[4]) ? row[4] : 'T&M',
+      };
+      if (!commessaInfo.nome || !commessaInfo.cliente || !commessaInfo.dataInizio || !commessaInfo.stato) {
+        showToast(`Dati mancanti o non validi alla riga ${i + 1} della sheet "Info Commessa". Riga saltata.`, 'warning', 5000);
+        continue;
+      }
+      if (commesseMap.has(commessaInfo.nome)) {
+        showToast(`Nome commessa duplicato: "${commessaInfo.nome}". Riga ${i + 1} saltata.`, 'warning', 5000);
+        continue;
+      }
+      const newCommessa = { id: generateId(state.dati.commesse.concat(newCommesse)), ...commessaInfo };
+      newCommesse.push(newCommessa);
+      commesseMap.set(newCommessa.nome, newCommessa);
     }
 
-    // --- 2. Create New Commessa ---
-    const newCommessa = { id: generateId(state.dati.commesse), ...commessaInfo };
+    if (newCommesse.length === 0) {
+      throw new Error('Nessuna commessa valida da importare trovata nel file.');
+    }
 
     // --- 3. Parse and Process Related Data ---
     const newBudgetMasters = [];
@@ -152,6 +173,16 @@ export async function importCommessaFromExcel(file) {
     const newOrdini = [];
     const newFatture = [];
     const newMargini = [];
+
+    // Helper to find commessa by name
+    const getCommessaId = (nomeCommessa) => {
+      const commessa = commesseMap.get(nomeCommessa);
+      if (!commessa) {
+        showToast(`Commessa "${nomeCommessa}" non trovata in "Info Commessa". Record saltato.`, 'warning', 5000);
+        return null;
+      }
+      return commessa.id;
+    };
 
     // Budget
     const budgetSheet = wb.Sheets[TEMPLATE_SHEETS.BUDGET];
@@ -164,16 +195,19 @@ export async function importCommessaFromExcel(file) {
       budgetData.forEach((row) => {
         const importoTotale = row['Importo Totale (se non dettagliato)'];
         if (importoTotale && parseFloat(importoTotale) > 0) {
-          const masterKey = `${row['ID Budget']}-${row['Mese Competenza (YYYY-MM)']}`;
-          totalBudgets.set(masterKey, { budgetId: row['ID Budget'], meseCompetenza: row['Mese Competenza (YYYY-MM)'], importo: parseFloat(importoTotale) });
+          const masterKey = `${row['Nome Commessa']}-${row['ID Budget']}-${row['Mese Competenza (YYYY-MM)']}`;
+          totalBudgets.set(masterKey, { nomeCommessa: row['Nome Commessa'], budgetId: row['ID Budget'], meseCompetenza: row['Mese Competenza (YYYY-MM)'], importo: parseFloat(importoTotale) });
         }
       });
 
       // Create total-based masters
       totalBudgets.forEach((value, key) => {
+        const commessaId = getCommessaId(value.nomeCommessa);
+        if (!commessaId) return;
+
         const newMaster = {
           id: generateId(state.dati.budgetMaster.concat(newBudgetMasters)),
-          commessaId: newCommessa.id,
+          commessaId: commessaId,
           budgetId: value.budgetId,
           meseCompetenza: value.meseCompetenza,
           type: 'total',
@@ -185,16 +219,19 @@ export async function importCommessaFromExcel(file) {
 
       // Second pass: process detail-based budgets
       budgetData.forEach((row) => {
-        const masterKey = `${row['ID Budget']}-${row['Mese Competenza (YYYY-MM)']}`;
+        const masterKey = `${row['Nome Commessa']}-${row['ID Budget']}-${row['Mese Competenza (YYYY-MM)']}`;
         // Skip if it's a total-based budget or if there's no detail data
         if (totalBudgets.has(masterKey) || !row['Figura'] || !row['Tariffa'] || !row['Giorni']) {
           return;
         }
 
+        const commessaId = getCommessaId(row['Nome Commessa']);
+        if (!commessaId) return;
+
         if (!budgetMasterMap.has(masterKey)) {
           const newMaster = {
             id: generateId(state.dati.budgetMaster.concat(newBudgetMasters)),
-            commessaId: newCommessa.id,
+            commessaId: commessaId,
             budgetId: row['ID Budget'],
             meseCompetenza: row['Mese Competenza (YYYY-MM)'],
             type: 'detail',
@@ -218,9 +255,11 @@ export async function importCommessaFromExcel(file) {
     const ordiniSheet = wb.Sheets[TEMPLATE_SHEETS.ORDINI];
     if (ordiniSheet) {
       XLSX.utils.sheet_to_json(ordiniSheet).forEach((row) => {
+        const commessaId = getCommessaId(row['Nome Commessa']);
+        if (!commessaId) return;
         newOrdini.push({
           id: generateId(state.dati.ordini.concat(newOrdini)),
-          commessaId: newCommessa.id,
+          commessaId: commessaId,
           numeroOrdine: row['Numero Ordine'],
           data: parseAndFormatDate(row['Data (DD/MM/YYYY)']),
           importo: parseFloat(row['Importo']),
@@ -232,9 +271,11 @@ export async function importCommessaFromExcel(file) {
     const fattureSheet = wb.Sheets[TEMPLATE_SHEETS.FATTURE];
     if (fattureSheet) {
       XLSX.utils.sheet_to_json(fattureSheet).forEach((row) => {
+        const commessaId = getCommessaId(row['Nome Commessa']);
+        if (!commessaId) return;
         newFatture.push({
           id: generateId(state.dati.fatture.concat(newFatture)),
-          commessaId: newCommessa.id,
+          commessaId: commessaId,
           meseCompetenza: row['Mese Competenza (YYYY-MM)'],
           dataInvioConsuntivo: parseAndFormatDate(row['Data Invio Consuntivo (DD/MM/YYYY)']),
           importo: parseFloat(row['Importo']),
@@ -246,9 +287,11 @@ export async function importCommessaFromExcel(file) {
     const forecastSheet = wb.Sheets[TEMPLATE_SHEETS.FORECAST];
     if (forecastSheet) {
       XLSX.utils.sheet_to_json(forecastSheet).forEach((row) => {
+        const commessaId = getCommessaId(row['Nome Commessa']);
+        if (!commessaId) return;
         newMargini.push({
           id: generateId(state.dati.margini.concat(newMargini)),
-          commessaId: newCommessa.id,
+          commessaId: commessaId,
           mese: row['Mese (YYYY-MM)'],
           costoConsuntivi: parseFloat(row['Costo Consuntivi']),
           hhConsuntivo: parseFloat(row['HH Consuntivo']),
@@ -257,7 +300,7 @@ export async function importCommessaFromExcel(file) {
     }
 
     // --- 4. Update State and Save ---
-    state.dati.commesse.push(newCommessa);
+    state.dati.commesse.push(...newCommesse);
     state.dati.budgetMaster.push(...newBudgetMasters);
     state.dati.budget.push(...newBudgetDetails);
     state.dati.ordini.push(...newOrdini);
@@ -265,7 +308,7 @@ export async function importCommessaFromExcel(file) {
     state.dati.margini.push(...newMargini);
 
     data.saveData();
-    showToast(`Commessa "${newCommessa.nome}" importata con successo!`, 'success');
+    showToast(`${newCommesse.length} commesse importate con successo!`, 'success');
     ui.update();
   } catch (error) {
     console.error("Errore durante l'importazione:", error);

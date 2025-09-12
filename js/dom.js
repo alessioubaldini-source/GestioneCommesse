@@ -52,6 +52,7 @@ export const elements = {
   periodFilter: document.getElementById('period-filter'),
   clientFilter: document.getElementById('client-filter'),
   statusFilter: document.getElementById('status-filter'),
+  typeFilter: document.getElementById('type-filter'),
   globalSearch: document.getElementById('global-search'),
   commesseSearch: document.getElementById('commesse-search'),
   sortCommesse: document.getElementById('sort-commesse'),

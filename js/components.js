@@ -296,6 +296,26 @@ export function updateCommessaHeader() {
   }
 }
 
+export function applyWidgetOrder() {
+  const grid = document.getElementById('dashboard-widgets-grid');
+  if (!grid) return;
+
+  const order = state.config.dashboardWidgetOrder;
+  if (!order || order.length === 0) return;
+
+  const widgetMap = new Map(Array.from(grid.children).map((w) => [w.id, w]));
+
+  // Rimuove tutti i figli per evitare problemi di ri-append
+  while (grid.firstChild) {
+    grid.removeChild(grid.firstChild);
+  }
+
+  order.forEach((widgetId) => {
+    const widget = widgetMap.get(widgetId);
+    if (widget) grid.appendChild(widget);
+  });
+}
+
 export function updateCommessaSelect() {
   const select = elements.commessaSelect;
 
@@ -330,6 +350,7 @@ export function updateFilterOptions() {
 
 export function updateButtonStates() {
   elements.gestioneTab.disabled = false;
+  elements.exportPdfBtn.disabled = state.selectedCommessa === null;
 
   const isCommessaSelected = state.selectedCommessa !== null;
   document.querySelectorAll('[data-modal-type]').forEach((btn) => {

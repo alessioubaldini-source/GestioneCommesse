@@ -37,6 +37,12 @@ export function initEventListeners() {
     ui.applyFilters();
   });
 
+  elements.typeFilter.addEventListener('change', (e) => {
+    state.pagination.commesse.currentPage = 1;
+    state.filters.tipologia = e.target.value;
+    ui.applyFilters();
+  });
+
   elements.globalSearch.addEventListener('input', (e) => {
     state.pagination.commesse.currentPage = 1;
     state.filters.search = e.target.value;
@@ -57,9 +63,9 @@ export function initEventListeners() {
     state.filters.period = state.config.defaultFilters.period;
     state.filters.client = state.config.defaultFilters.client;
     state.filters.status = state.config.defaultFilters.status;
+    state.filters.tipologia = state.config.defaultFilters.tipologia;
     state.filters.search = ''; // Search always resets to empty
 
-    elements.globalSearch.value = '';
     ui.applyFilters();
   });
 
@@ -208,8 +214,9 @@ export function initEventListeners() {
       state.config.sogliaMargineAttenzione = parseInt(dataObject.sogliaMargineAttenzione, 10);
       state.config.sogliaMargineCritico = parseInt(dataObject.sogliaMargineCritico, 10);
       state.config.defaultFilters.period = dataObject.defaultPeriod;
-      state.config.defaultFilters.client = data.defaultClient;
+      state.config.defaultFilters.client = dataObject.defaultClient;
       state.config.defaultFilters.status = dataObject.defaultStatus;
+      state.config.defaultFilters.tipologia = dataObject.defaultTipologia;
 
       data.saveConfig();
       showToast('Impostazioni salvate con successo!', 'success');

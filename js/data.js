@@ -9,8 +9,12 @@ function loadConfig() {
   if (savedConfig) {
     try {
       const parsedConfig = JSON.parse(savedConfig);
-      // Merge saved config with defaults to ensure new properties are added
-      state.config = { ...state.config, ...parsedConfig };
+      // Merge saved config with defaults, ensuring nested objects like defaultFilters are also merged.
+      const newConfig = { ...state.config, ...parsedConfig };
+      if (parsedConfig.defaultFilters) {
+        newConfig.defaultFilters = { ...state.config.defaultFilters, ...parsedConfig.defaultFilters };
+      }
+      state.config = newConfig;
     } catch (e) {
       console.error('Error parsing saved config, using defaults.', e);
     }
@@ -19,6 +23,7 @@ function loadConfig() {
   state.filters.period = state.config.defaultFilters.period || 'all';
   state.filters.client = state.config.defaultFilters.client || 'all';
   state.filters.status = state.config.defaultFilters.status || 'all';
+  state.filters.tipologia = state.config.defaultFilters.tipologia || 'all';
 }
 
 export function saveConfig() {
@@ -31,23 +36,43 @@ export function loadData() {
   if (savedData) {
     try {
       state.dati = JSON.parse(savedData);
-      // Ensure activityRules exists, otherwise load defaults
-      if (!state.dati.activityRules) {
-        state.dati.activityRules = getDefaultData().activityRules;
-      } else {
-        // Migration for old color values to ensure visibility
-        state.dati.activityRules.forEach((rule) => {
-          if (rule.color === 'bg-orange-100' || rule.color === 'bg-orange-200') {
-            rule.color = 'bg-purple-200';
-          } else if (rule.color === 'bg-cyan-100' || rule.color === 'bg-cyan-200') {
-            rule.color = 'bg-sky-200';
-          }
-        });
+
+      // Validation: if data is corrupted or doesn't have the essential 'commesse' array, reset to default.
+      if (!state.dati || !Array.isArray(state.dati.commesse)) {
+        throw new Error('Dati salvati non validi o corrotti.');
       }
-      console.log('Dati caricati dal localStorage:', state.dati);
+
+      // --- Data Structure Validation and Migration ---
+      // This ensures that if the saved data is from an older version,
+      // it gets updated with new properties or arrays without losing user data.
+      const defaultData = getDefaultData();
+      Object.keys(defaultData).forEach((key) => {
+        if (state.dati[key] === undefined) {
+          console.warn(`Data structure migration: adding missing key '${key}'.`);
+          state.dati[key] = defaultData[key];
+        }
+      });
+
+      // --- Specific Field Migrations ---
+      state.dati.commesse.forEach((commessa) => {
+        if (commessa.tipologia === undefined) {
+          commessa.tipologia = 'T&M'; // Add 'tipologia' to old commesse
+        }
+      });
+
+      // Migration for old color values in activityRules to ensure visibility
+      state.dati.activityRules.forEach((rule) => {
+        if (rule.color === 'bg-orange-100' || rule.color === 'bg-orange-200') {
+          rule.color = 'bg-purple-200';
+        } else if (rule.color === 'bg-cyan-100' || rule.color === 'bg-cyan-200') {
+          rule.color = 'bg-sky-200';
+        }
+      });
+      console.log('Dati caricati e migrati dal localStorage:', state.dati);
     } catch (error) {
-      console.error('Errore nel caricamento dal localStorage:', error);
+      console.error('Errore nel caricamento dal localStorage, ripristino dati di default:', error);
       state.dati = getDefaultData();
+      saveData(); // Sovrascrive i dati corrotti con quelli di default
     }
   } else {
     console.log('localStorage vuoto, caricamento dati di esempio');
@@ -55,7 +80,8 @@ export function loadData() {
     saveData();
   }
 
-  if (state.dati.commesse.length > 0) {
+  // This check is now safe because of the validation above
+  if (state.dati && state.dati.commesse.length > 0) {
     state.selectedCommessa = state.dati.commesse[0].id;
   }
 }
@@ -333,9 +359,9 @@ export function deleteCommessa(id) {
 function getDefaultData() {
   return {
     commesse: [
-      { id: 1, nome: 'Progetto Alpha', cliente: 'Cliente A', dataInizio: '2024-01-15', stato: 'Attivo' },
-      { id: 2, nome: 'Budget Zero', cliente: 'Cliente B', dataInizio: '2024-12-31', stato: 'Pianificazione' },
-      { id: 3, nome: 'Sistema Beta', cliente: 'Cliente C', dataInizio: '2024-06-01', stato: 'Attivo' },
+      { id: 1, nome: 'Progetto Alpha', cliente: 'Cliente A', dataInizio: '2024-01-15', stato: 'Attivo', tipologia: 'T&M' },
+      { id: 2, nome: 'Budget Zero', cliente: 'Cliente B', dataInizio: '2024-12-31', stato: 'Pianificazione', tipologia: 'Corpo' },
+      { id: 3, nome: 'Sistema Beta', cliente: 'Cliente C', dataInizio: '2024-06-01', stato: 'Attivo', tipologia: 'Canone' },
     ],
     budgetMaster: [
       { id: 1, commessaId: 2, budgetId: 'BUD001', meseCompetenza: '2024-12', type: 'detail', importo: null },

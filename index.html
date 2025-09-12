@@ -135,6 +135,15 @@
                 <option value="Sospeso">Sospeso</option>
               </select>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipologia</label>
+              <select id="type-filter" class="border rounded-lg px-3 py-2 text-sm">
+                <option value="all">Tutte le tipologie</option>
+                <option value="T&M">T&M</option>
+                <option value="Corpo">Corpo</option>
+                <option value="Canone">Canone</option>
+              </select>
+            </div>
             <div class="flex-1"></div>
             <button id="reset-filters" class="text-sm font-medium text-blue-600 hover:text-blue-800">Reset Filtri</button>
           </div>
@@ -364,6 +373,7 @@
                 <select id="sort-commesse" class="border rounded-lg px-3 py-2 text-sm">
                   <option value="nome">Ordina per Nome</option>
                   <option value="cliente">Ordina per Cliente</option>
+                  <option value="tipologia">Ordina per Tipologia</option>
                   <option value="ricavi">Ordina per Ricavi</option>
                   <option value="margine">Ordina per Margine</option>
                   <option value="data">Ordina per Data</option>
@@ -380,6 +390,7 @@
                   <tr>
                     <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Nome</th>
                     <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Cliente</th>
+                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Tipologia</th>
                     <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Data Inizio</th>
                     <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Stato</th>
                     <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Ricavi</th>
@@ -402,8 +413,7 @@
 
       <!-- Gestione Tab -->
       <div id="gestione-content" class="tab-content hidden">
-        <!-- Header Commessa Migliorato -->
-        <div class="commessa-header text-white p-6 mb-6 rounded-lg">
+        <div class="commessa-header text-white p-6 mb-6 rounded-lg relative">
           <div class="flex items-center justify-between">
             <div class="flex-1">
               <h3 class="text-xl font-bold mb-4">Gestione Commessa</h3>
@@ -416,7 +426,8 @@
                 </div>
                 <div id="commessa-info">
                   <p class="text-sm opacity-90">Cliente: <span id="selected-cliente" class="font-semibold text-lg">-</span></p>
-                  <p class="text-sm opacity-90 mt-2">Stato: <span id="selected-stato" class="font-semibold text-lg">-</span></p>
+                  <p class="text-sm opacity-90 mt-2">Tipologia: <span id="selected-tipologia">-</span></p>
+                  <p class="text-sm opacity-90 mt-2">Stato: <span id="selected-stato">-</span></p>
                 </div>
                 <div id="commessa-kpi">
                   <p class="text-sm opacity-90">Ricavi Fatturati: <span id="selected-budget" class="font-bold text-xl">€0</span></p>
@@ -424,6 +435,18 @@
                 </div>
               </div>
             </div>
+          </div>
+          <div class="absolute top-6 right-6">
+            <button id="export-pdf-btn" class="btn-primary bg-red-600 hover:bg-red-700 flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+              Esporta PDF
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -606,7 +629,7 @@
                   <table class="w-full text-xs">
                     <thead class="bg-gray-50 border-b">
                       <tr>
-                        <th class="px-2 py-3 text-left font-medium text-gray-900">Mese</th>
+                        <th class="px-3 py-3 text-left font-medium text-gray-900 whitespace-nowrap">Mese</th>
                         <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Cum.</th>
                         <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Mensile</th>
                         <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons. Cum.</th>
@@ -637,7 +660,7 @@
                   <p><strong>Costo Cons. Mensile:</strong> Costo effettivo del singolo mese.</p>
                   <p><strong>HH Cons. Cum.:</strong> Ore totali cumulative registrate fino a quel mese.</p>
                   <p><strong>HH Cons. Mensile:</strong> Ore effettive del singolo mese.</p>
-                  <p><strong>Costo/HH:</strong> Costo medio orario (Costo Mensile / HH Mensili).</p>
+                  <p><strong>Costo/HH:</strong> Costo medio orario cumulativo (Costo Cons. Cum. / HH Cons. Cum.).</p>
                   <p><strong>Ricavo Cons.:</strong> Totale fatturato per la commessa fino al mese del record.</p>
                   <p><strong>Margine %:</strong> (Ricavo Cons. - Costo Cons. Cum.) / Ricavo Cons.</p>
                   <p><strong>Ricavo Budget Tot:</strong> Valore dell'ultimo budget approvato per la commessa.</p>

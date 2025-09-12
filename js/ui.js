@@ -92,10 +92,10 @@ export function switchSubTab(tabName) {
 }
 
 export function applyFilters() {
+  components.updateFilterOptions();
   components.updateKPI();
   tables.updateTables();
   charts.updateCharts();
-  data.saveData(); // Save filters state on change
 }
 
 export function openModal(type, id = null) {
@@ -184,7 +184,7 @@ export function openModal(type, id = null) {
 
         <h4 class="text-md font-semibold text-gray-800 border-b pb-2 mb-4">Filtri di Default</h4>
         <p class="text-sm text-gray-600 mb-4">Imposta i filtri predefiniti che verranno applicati all'avvio e al reset.</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Periodo</label>
             <select name="defaultPeriod" class="w-full border rounded-lg px-3 py-2 text-sm"><option value="all" ${defaultFilters.period === 'all' ? 'selected' : ''}>Tutti i periodi</option><option value="current-month" ${
@@ -201,6 +201,11 @@ export function openModal(type, id = null) {
           }>Tutti gli stati</option><option value="Attivo" ${defaultFilters.status === 'Attivo' ? 'selected' : ''}>Attivo</option><option value="Pianificazione" ${
         defaultFilters.status === 'Pianificazione' ? 'selected' : ''
       }>Pianificazione</option><option value="Completato" ${defaultFilters.status === 'Completato' ? 'selected' : ''}>Completato</option><option value="Sospeso" ${defaultFilters.status === 'Sospeso' ? 'selected' : ''}>Sospeso</option></select></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">Tipologia</label><select name="defaultTipologia" class="w-full border rounded-lg px-3 py-2 text-sm"><option value="all" ${
+            defaultFilters.tipologia === 'all' ? 'selected' : ''
+          }>Tutte le tipologie</option><option value="T&M" ${defaultFilters.tipologia === 'T&M' ? 'selected' : ''}>T&M</option><option value="Corpo" ${defaultFilters.tipologia === 'Corpo' ? 'selected' : ''}>Corpo</option><option value="Canone" ${
+        defaultFilters.tipologia === 'Canone' ? 'selected' : ''
+      }>Canone</option></select></div>
         </div>`;
       break;
   }
@@ -211,8 +216,21 @@ export function openModal(type, id = null) {
       fieldsHTML = `
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome Commessa</label><input type="text" name="nome" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cliente</label><input type="text" name="cliente" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Inizio</label><input type="date" name="dataInizio" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stato</label><select name="stato" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required><option value="">Seleziona stato</option><option value="Pianificazione">Pianificazione</option><option value="Attivo">Attivo</option><option value="Completato">Completato</option><option value="Sospeso">Sospeso</option></select></div>`;
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Inizio</label>
+                  <input type="date" name="dataInizio" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipologia</label>
+                  <select name="tipologia" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required>
+                    <option value="T&M">T&M</option>
+                    <option value="Corpo">Corpo</option>
+                    <option value="Canone">Canone</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mt-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stato</label><select name="stato" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required><option value="">Seleziona stato</option><option value="Pianificazione">Pianificazione</option><option value="Attivo">Attivo</option><option value="Completato">Completato</option><option value="Sospeso">Sospeso</option></select></div>`;
       break;
     case 'budget':
       titleText = id ? 'Modifica Budget Detail' : 'Nuovo Budget';

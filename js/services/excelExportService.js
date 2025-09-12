@@ -103,21 +103,21 @@ function createDashboardSheet(wb, { commesseToExport, fattureToExport, marginiTo
 
 function createCommesseSheet(wb, { commesseToExport, marginiToExport }) {
   const commesseData = [
-    ['GESTIONE COMMESSE', '', '', '', '', '', ''],
-    ['Nome', 'Cliente', 'Data Inizio', 'Stato', 'Ricavi Fatturati €', 'Costi Totali €', 'Margine %'],
+    ['GESTIONE COMMESSE', '', '', '', '', '', '', ''],
+    ['Nome', 'Cliente', 'Tipologia', 'Data Inizio', 'Stato', 'Ricavi Fatturati €', 'Costi Totali €', 'Margine %'],
     ...commesseToExport.map((c, index) => {
       const row = index + 3;
       const ricaviFatturati = calcolaMontanteFatture(c.id);
       const costiTotali = marginiToExport.filter((m) => m.commessaId === c.id).reduce((sum, m) => sum + m.costoConsuntivi, 0);
-      return [c.nome, c.cliente, new Date(c.dataInizio), c.stato, ricaviFatturati, costiTotali, { f: `=IF(E${row}>0,(E${row}-F${row})/E${row},0)` }];
+      return [c.nome, c.cliente, c.tipologia, new Date(c.dataInizio), c.stato, ricaviFatturati, costiTotali, { f: `=IF(F${row}>0,(F${row}-G${row})/F${row},0)` }];
     }),
   ];
 
   const totalRow = commesseData.length + 1;
-  commesseData.push(['TOTALI', '', '', '', { f: `=SUM(E3:E${totalRow - 1})` }, { f: `=SUM(F3:F${totalRow - 1})` }, { f: `=IF(E${totalRow}>0,(E${totalRow}-F${totalRow})/E${totalRow},0)` }]);
+  commesseData.push(['TOTALI', '', '', '', '', { f: `=SUM(F3:F${totalRow - 1})` }, { f: `=SUM(G3:G${totalRow - 1})` }, { f: `=IF(F${totalRow}>0,(F${totalRow}-G${totalRow})/F${totalRow},0)` }]);
 
   const commesseWS = XLSX.utils.aoa_to_sheet(commesseData, { cellDates: true });
-  commesseWS['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 12 }];
+  commesseWS['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 15 }, { wch: 12 }];
 
   // Applica stili e formati
   const range = XLSX.utils.decode_range(commesseWS['!ref']);
@@ -129,18 +129,18 @@ function createCommesseSheet(wb, { commesseToExport, marginiToExport }) {
 
   // Applica stile alla riga dei totali
   commesseWS['A' + totalRow].s = excelStyles.total;
-  commesseWS['E' + totalRow].s = excelStyles.total_currency;
   commesseWS['F' + totalRow].s = excelStyles.total_currency;
-  commesseWS['G' + totalRow].s = excelStyles.total_percentage;
+  commesseWS['G' + totalRow].s = excelStyles.total_currency;
+  commesseWS['H' + totalRow].s = excelStyles.total_percentage;
 
   for (let R = 2; R <= range.e.r; ++R) {
-    const ricaviCell = commesseWS[XLSX.utils.encode_cell({ r: R, c: 4 })];
+    const ricaviCell = commesseWS[XLSX.utils.encode_cell({ r: R, c: 5 })];
     if (ricaviCell) ricaviCell.z = excelStyles.currency;
 
-    const costiCell = commesseWS[XLSX.utils.encode_cell({ r: R, c: 5 })];
+    const costiCell = commesseWS[XLSX.utils.encode_cell({ r: R, c: 6 })];
     if (costiCell) costiCell.z = excelStyles.currency;
 
-    const margineCell = commesseWS[XLSX.utils.encode_cell({ r: R, c: 6 })];
+    const margineCell = commesseWS[XLSX.utils.encode_cell({ r: R, c: 7 })];
     if (margineCell) margineCell.z = excelStyles.percentage;
   }
 

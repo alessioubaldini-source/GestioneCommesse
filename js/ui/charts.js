@@ -175,6 +175,7 @@ export function updateCharts() {
     clientData.push({ label: 'Nessun dato', value: 1 });
   }
 
+  // Correzione: ripristinato getContext('2d') che era stato rimosso per errore
   const ctx3 = elements.clientChartCanvas.getContext('2d');
   if (state.charts.clientChart) state.charts.clientChart.destroy();
   state.charts.clientChart = new Chart(ctx3, {

@@ -43,10 +43,15 @@ export function getFilteredCommesse() {
     filtered = filtered.filter((c) => c.stato === state.filters.status);
   }
 
+  // Filter by tipologia
+  if (state.filters.tipologia && state.filters.tipologia !== 'all') {
+    filtered = filtered.filter((c) => c.tipologia === state.filters.tipologia);
+  }
+
   // Filter by search
   if (state.filters.search) {
     const search = state.filters.search.toLowerCase();
-    filtered = filtered.filter((c) => c.nome.toLowerCase().includes(search) || c.cliente.toLowerCase().includes(search) || c.stato.toLowerCase().includes(search));
+    filtered = filtered.filter((c) => c.nome.toLowerCase().includes(search) || c.cliente.toLowerCase().includes(search) || c.stato.toLowerCase().includes(search) || (c.tipologia && c.tipologia.toLowerCase().includes(search)));
   }
 
   return filtered;

@@ -41,6 +41,8 @@ export function sortCommesseTable(sortBy) {
         return a.nome.localeCompare(b.nome);
       case 'cliente':
         return a.cliente.localeCompare(b.cliente);
+      case 'tipologia':
+        return (a.tipologia || '').localeCompare(b.tipologia || '');
       case 'ricavi':
         return calcService.calcolaMontanteFatture(b.id) - calcService.calcolaMontanteFatture(a.id);
       case 'margine':
@@ -85,14 +87,18 @@ export function updateTables() {
         const margineText = margineReale !== null ? `${margineReale.toFixed(2)}%` : 'N/A';
         const margineClass = margineReale !== null && margineReale < state.config.sogliaMargineAttenzione ? 'text-red-600 font-bold alert-warning' : 'text-green-600';
 
+        const tipologiaClass =
+          commessa.tipologia === 'T&M' ? 'bg-purple-100 text-purple-800' : commessa.tipologia === 'Corpo' ? 'bg-indigo-100 text-indigo-800' : commessa.tipologia === 'Canone' ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-800';
+
         return `
               <tr class="hover:bg-gray-50">
                   <td class="px-4 py-3 text-sm font-medium">
                     <button class="text-blue-600 hover:underline font-semibold commessa-link-btn text-left" data-commessa-id="${commessa.id}">${commessa.nome}</button>
                   </td>
                   <td class="px-4 py-3 text-sm">${commessa.cliente}</td>
+                  <td class="px-4 py-3 text-sm"><span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${tipologiaClass}">${commessa.tipologia}</span></td>
                   <td class="px-4 py-3 text-sm">${new Date(commessa.dataInizio).toLocaleDateString()}</td>
-                  <td class="px-4 py-3 text-sm"><span class="inline-block px-2 py-1 text-xs rounded-full ${
+                  <td class="px-4 py-3 text-sm"><span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${
                     commessa.stato === 'Attivo' ? 'bg-green-100 text-green-800' : commessa.stato === 'Completato' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                   }">${commessa.stato}</span></td>
                   <td class="px-4 py-3 text-sm text-right">${utils.formatCurrency(ricaviReali)}</td>
@@ -348,7 +354,7 @@ function renderMarginiTable(commessaId) {
         const hhMensile = prevMargine ? margine.hhConsuntivo - prevMargine.hhConsuntivo : margine.hhConsuntivo;
 
         const ricavoConsuntivo = calcService.calcolaMontanteFattureFinoAlMese(commessaId, margine.mese);
-        const costoMedioHH = hhMensile > 0 ? costoMensile / hhMensile : 0;
+        const costoMedioHH = margine.hhConsuntivo > 0 ? margine.costoConsuntivi / margine.hhConsuntivo : 0;
         const marginePerc = ricavoConsuntivo > 0 ? ((ricavoConsuntivo - margine.costoConsuntivi) / ricavoConsuntivo) * 100 : 0;
 
         const ricavoBudgetTotale = calcService.calcolaTotaleBudgetRecent(commessaId);
@@ -361,7 +367,7 @@ function renderMarginiTable(commessaId) {
 
         return `
                     <tr class="hover:bg-gray-50">
-                        <td class="px-2 py-3 font-medium text-xs">${margine.mese}</td>
+                        <td class="px-3 py-3 font-medium text-xs whitespace-nowrap">${margine.mese}</td>
                         <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${utils.formatCurrency(margine.costoConsuntivi)}</td>
                         <td class="px-2 py-3 text-center text-gray-600 font-medium text-xs">${utils.formatCurrency(costoMensile)}</td>
                         <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${margine.hhConsuntivo.toFixed(2)}</td>
