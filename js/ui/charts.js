@@ -13,7 +13,19 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+let clientChartListenerAdded = false;
+
 export function updateCharts() {
+  // Aggiunge l'event listener per il dropdown del grafico "Ricavi per", ma solo una volta.
+  if (!clientChartListenerAdded) {
+    const clientChartGroupBySelect = document.getElementById('client-chart-group-by');
+    if (clientChartGroupBySelect) {
+      // Quando il dropdown cambia, riesegue solo l'aggiornamento dei grafici.
+      clientChartGroupBySelect.addEventListener('change', updateCharts);
+      clientChartListenerAdded = true;
+    }
+  }
+
   const filteredCommesse = calcService.getFilteredCommesse();
   const { startDate, endDate } = calcService.getPeriodDateRange(state.filters.period);
 
@@ -161,18 +173,37 @@ export function updateCharts() {
   });
 
   // Client Chart
-  const clientRevenueMap = new Map();
+  const groupBy = document.getElementById('client-chart-group-by')?.value || 'cliente';
+  const dataMap = new Map();
   filteredCommesse.forEach((commessa) => {
-    // Usa il montante delle fatture per i ricavi reali per cliente.
+    let key;
+    switch (groupBy) {
+      case 'tipologia':
+        key = commessa.tipologia;
+        break;
+      case 'cliente_tipologia':
+        key = `${commessa.cliente} - ${commessa.tipologia}`;
+        break;
+      case 'cliente':
+      default:
+        key = commessa.cliente;
+        break;
+    }
+
+    // Salta se la chiave non è valida (es. tipologia non definita o vuota)
+    if (!key) return;
+
     const revenue = calcService.calcolaMontanteFatture(commessa.id);
-    const currentRevenue = clientRevenueMap.get(commessa.cliente) || 0;
-    clientRevenueMap.set(commessa.cliente, currentRevenue + revenue);
+    const currentInfo = dataMap.get(key) || { revenue: 0, count: 0 };
+    currentInfo.revenue += revenue;
+    currentInfo.count += 1;
+    dataMap.set(key, currentInfo);
   });
 
-  const clientData = Array.from(clientRevenueMap, ([label, value]) => ({ label, value })).filter((d) => d.value > 0); // Filtra clienti con ricavi > 0
+  const clientData = Array.from(dataMap, ([label, data]) => ({ label, value: data.revenue, count: data.count })).filter((d) => d.value > 0); // Filtra clienti con ricavi > 0
 
   if (clientData.length === 0) {
-    clientData.push({ label: 'Nessun dato', value: 1 });
+    clientData.push({ label: 'Nessun dato', value: 1, count: 0 });
   }
 
   // Correzione: ripristinato getContext('2d') che era stato rimosso per errore
@@ -211,13 +242,23 @@ export function updateCharts() {
           callbacks: {
             label: function (context) {
               if (context.label === 'Nessun dato') return 'Nessun dato disponibile';
-              return context.label + ': ' + utils.formatCurrency(context.raw);
+              const dataPoint = clientData[context.dataIndex];
+              const commesseCount = dataPoint.count;
+              const commesseLabel = commesseCount === 1 ? 'commessa' : 'commesse';
+              return `${context.label}: ${utils.formatCurrency(context.raw)} (${commesseCount} ${commesseLabel})`;
             },
           },
         },
       },
     },
   });
+
+  // Aggiorna la legenda testuale del grafico
+  const legendTextEl = document.getElementById('client-chart-legend-text');
+  if (legendTextEl) {
+    const legendMap = { cliente: 'per ogni cliente.', tipologia: 'per ogni tipologia di commessa.', cliente_tipologia: 'per combinazione di cliente e tipologia.' };
+    legendTextEl.textContent = `Mostra la distribuzione dei ricavi totali (somma delle fatture) ${legendMap[groupBy] || 'per ogni cliente.'}`;
+  }
 
   // Margini Chart
   const { sogliaMargineEccellente, sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
@@ -284,6 +325,9 @@ export function updateCharts() {
           grid: {
             color: gridColor,
           },
+          // Aggiunge un po' di spazio sopra la barra più alta per l'etichetta.
+          // Se il valore massimo è > 0, aggiunge 2, altrimenti imposta il massimo a 5 per dare respiro al grafico vuoto.
+          suggestedMax: Math.max(...marginiData.values) > 0 ? Math.max(...marginiData.values) + 2 : 5,
         },
         x: {
           ticks: { color: labelColor },
@@ -291,5 +335,29 @@ export function updateCharts() {
         },
       },
     },
+    // Aggiungo il plugin per mostrare i valori sopra le barre
+    plugins: [
+      {
+        id: 'custom_data_labels',
+        afterDatasetsDraw: (chart) => {
+          const { ctx } = chart;
+          ctx.save();
+          // Usa un colore leggibile e un font consistente
+          ctx.font = '600 12px "Inter", sans-serif, system-ui';
+          ctx.fillStyle = labelColor; // Usa lo stesso colore delle etichette degli assi
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+
+          chart.getDatasetMeta(0).data.forEach((bar, index) => {
+            const value = chart.data.datasets[0].data[index];
+            if (value > 0) {
+              // Posiziona il testo sopra la barra
+              ctx.fillText(value, bar.x, bar.y - 5);
+            }
+          });
+          ctx.restore();
+        },
+      },
+    ],
   });
 }

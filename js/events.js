@@ -7,6 +7,7 @@ import * as ui from './ui.js';
 import * as data from './data.js';
 import { exportToExcel } from './services/excelExportService.js';
 import * as excelImportService from './services/excelImportService.js';
+import { exportCommessaToPdf } from './services/pdfExportService.js';
 
 export function initEventListeners() {
   // Tab navigation
@@ -82,6 +83,11 @@ export function initEventListeners() {
   elements.importFileInput?.addEventListener('change', (e) => {
     excelImportService.importCommessaFromExcel(e.target.files[0]);
     e.target.value = ''; // Reset input to allow re-importing the same file
+  });
+
+  // Export PDF
+  elements.exportPdfBtn?.addEventListener('click', () => {
+    exportCommessaToPdf(state.selectedCommessa);
   });
 
   // Modal events

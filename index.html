@@ -7,6 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.js"></script>
     <link rel="stylesheet" href="style.css" />
     <style>
       /* Animazioni per transizioni */
@@ -284,8 +286,15 @@
             </div>
             <!-- Ricavi per Cliente -->
             <div class="bg-white p-6 rounded-lg shadow border chart-container">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Ricavi per Cliente</h3>
+              <div class="flex justify-between items-center mb-4 gap-4">
+                <div class="flex items-center gap-3">
+                  <h3 class="text-lg font-semibold">Ricavi per</h3>
+                  <select id="client-chart-group-by" class="border rounded-lg px-2 py-1 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                    <option value="cliente">Cliente</option>
+                    <option value="tipologia">Tipologia</option>
+                    <option value="cliente_tipologia">Cliente e Tipologia</option>
+                  </select>
+                </div>
                 <div class="flex items-center gap-2">
                   <button class="legend-toggle" title="Mostra/Nascondi Legenda">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -301,7 +310,7 @@
               </div>
               <canvas id="clientChart" width="400" height="250"></canvas>
               <div class="legend-content hidden mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
-                <p>Mostra la distribuzione dei ricavi totali (somma delle fatture) per ogni cliente.</p>
+                <p id="client-chart-legend-text">Mostra la distribuzione dei ricavi totali (somma delle fatture) per ogni cliente.</p>
               </div>
             </div>
             <!-- Distribuzione Margini -->
@@ -431,7 +440,7 @@
                 </div>
                 <div id="commessa-kpi">
                   <p class="text-sm opacity-90">Ricavi Fatturati: <span id="selected-budget" class="font-bold text-xl">€0</span></p>
-                  <p class="text-sm opacity-90 mt-2">Margine Reale: <span id="selected-margine" class="font-bold text-xl">0%</span></p>
+                  <p class="text-sm opacity-90 mt-2">Margine Ultimo Forecast: <span id="selected-margine" class="font-bold text-xl">0%</span></p>
                 </div>
               </div>
             </div>

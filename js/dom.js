@@ -62,4 +62,5 @@ export const elements = {
   importCommessaBtn: document.getElementById('import-commessa-btn'),
   importFileInput: document.getElementById('import-file-input'),
   settingsBtn: document.getElementById('settings-btn'),
+  exportPdfBtn: document.getElementById('export-pdf-btn'),
 };

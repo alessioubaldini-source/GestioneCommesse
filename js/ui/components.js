@@ -190,20 +190,37 @@ export function updateCommesseMonitorate() {
           `;
       }
 
-      // Costruisci la stringa con la motivazione
-      const motivi = [];
-      if (motivoMonitoraggio.margine) motivi.push('Margine basso');
-      if (motivoMonitoraggio.residuo) motivi.push('Residuo basso');
-      const motivoText = motivi.join(' e ');
-
-      const motivoHTML = `<p class="text-xs text-gray-500 mt-1">Motivo: <span class="font-medium text-gray-700">${motivoText}</span></p>`;
+      // Costruisci le icone per la motivazione
+      let iconsHTML = '<div class="flex items-center gap-3 mt-2">';
+      if (motivoMonitoraggio.margine) {
+        const iconColor = isMarginCritical ? 'text-red-800' : 'text-yellow-800';
+        iconsHTML += `
+          <div class="flex items-center gap-1 text-xs ${iconColor}" title="Problema di margine basso">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-3.75-.604m3.75.604l.604 3.75" />
+            </svg>
+            <span>Margine</span>
+          </div>
+        `;
+      }
+      if (motivoMonitoraggio.residuo) {
+        iconsHTML += `
+          <div class="flex items-center gap-1 text-xs text-orange-700" title="Problema di residuo da fatturare basso">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 7.756a4.5 4.5 0 100 8.488M7.5 10.5h5.25m-5.25 3h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Residuo</span>
+          </div>
+        `;
+      }
+      iconsHTML += '</div>';
 
       return `
           <div class="p-3 rounded-lg ${bgColor} border-l-4 ${borderColor} flex justify-between items-center">
               <div>
                   <button class="text-blue-600 hover:underline font-semibold commessa-link-btn text-left" data-commessa-id="${commessa.id}">${commessa.nome}</button>
                   <p class="text-xs text-gray-600">${commessa.cliente}</p>
-                  ${motivoHTML}
+                  ${iconsHTML}
               </div>
               <div>
                 ${alertMargineHTML}
@@ -332,6 +349,8 @@ export function updateButtonStates() {
   elements.gestioneTab.disabled = false;
 
   const isCommessaSelected = state.selectedCommessa !== null;
+  elements.exportPdfBtn.disabled = !isCommessaSelected;
+
   document.querySelectorAll('[data-modal-type]').forEach((btn) => {
     if (btn.dataset.modalType !== 'commessa') {
       btn.disabled = !isCommessaSelected;

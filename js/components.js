@@ -243,6 +243,9 @@ export function updateCurrentActivityPhase() {
 }
 
 export function updateCommessaHeader() {
+  // Aggiorna lo stato dei pulsanti (es. Esporta PDF) ogni volta che l'header cambia
+  updateButtonStates();
+
   if (!state.selectedCommessa) {
     elements.selectedCliente.textContent = '-';
     const tipologiaElement = document.getElementById('selected-tipologia');
@@ -294,26 +297,6 @@ export function updateCommessaHeader() {
   } else {
     margineElement.textContent = 'N/A';
   }
-}
-
-export function applyWidgetOrder() {
-  const grid = document.getElementById('dashboard-widgets-grid');
-  if (!grid) return;
-
-  const order = state.config.dashboardWidgetOrder;
-  if (!order || order.length === 0) return;
-
-  const widgetMap = new Map(Array.from(grid.children).map((w) => [w.id, w]));
-
-  // Rimuove tutti i figli per evitare problemi di ri-append
-  while (grid.firstChild) {
-    grid.removeChild(grid.firstChild);
-  }
-
-  order.forEach((widgetId) => {
-    const widget = widgetMap.get(widgetId);
-    if (widget) grid.appendChild(widget);
-  });
 }
 
 export function updateCommessaSelect() {
