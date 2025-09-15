@@ -266,8 +266,13 @@
               </div>
               <canvas id="budgetVsConsuntivoChart" width="400" height="250"></canvas>
               <div class="legend-content hidden mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
-                <p><strong>Budget:</strong> Somma dei valori di tutti i budget per ogni commessa.</p>
-                <p><strong>Consuntivo:</strong> Somma di tutti i costi consuntivi registrati per ogni commessa.</p>
+                <p>Confronta il <strong>Budget</strong> totale con il <strong>Consuntivo</strong> (costi) per ogni commessa.</p>
+                <p class="mt-2">Il colore della barra del consuntivo indica la performance:</p>
+                <ul class="list-disc list-inside mt-1 space-y-1">
+                  <li><span class="font-semibold text-green-600">Verde:</span> Entro il 90% del budget.</li>
+                  <li><span class="font-semibold text-yellow-600">Giallo:</span> Oltre il 90% del budget.</li>
+                  <li><span class="font-semibold text-red-600">Rosso:</span> Oltre il 100% del budget (fuori budget).</li>
+                </ul>
               </div>
             </div>
             <!-- Commesse da Monitorare -->
@@ -386,6 +391,7 @@
                   <option value="ricavi">Ordina per Ricavi</option>
                   <option value="margine">Ordina per Margine</option>
                   <option value="data">Ordina per Data</option>
+                  <option value="ultimo-forecast">Ordina per Ultimo Forecast</option>
                 </select>
                 <button data-modal-type="commessa" class="btn-primary bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
                   Nuova Commessa
@@ -402,6 +408,7 @@
                     <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Tipologia</th>
                     <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Data Inizio</th>
                     <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Stato</th>
+                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-900">Ultimo Forecast</th>
                     <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Ricavi</th>
                     <th class="px-4 py-3 text-right text-sm font-medium text-gray-900">Margine %</th>
                     <th class="px-4 py-3 text-center text-sm font-medium text-gray-900">Azioni</th>
@@ -636,25 +643,8 @@
               <div class="bg-white rounded-lg shadow border">
                 <div class="overflow-x-auto">
                   <table class="w-full text-xs">
-                    <thead class="bg-gray-50 border-b">
-                      <tr>
-                        <th class="px-3 py-3 text-left font-medium text-gray-900 whitespace-nowrap">Mese</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Cum.</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Mensile</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons. Cum.</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons. Mensile</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo/HH</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Cons.</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Margine %</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Budget Tot</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Budget (EAC)</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900 bg-green-50">Costo ETC</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900 bg-green-50">Ore ETC</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">% Avanz.</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Maturato</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">ETC Revenue</th>
-                        <th class="px-2 py-3 text-center font-medium text-gray-900">Azioni</th>
-                      </tr>
+                    <thead id="margini-table-header-container" class="bg-gray-50 border-b">
+                      <!-- Intestazione generata dinamicamente da JS -->
                     </thead>
                     <tbody id="margini-table" class="divide-y divide-gray-200"></tbody>
                   </table>
@@ -662,23 +652,42 @@
               </div>
 
               <!-- Legend for Margins Table -->
-              <div class="legend-content hidden mt-4 p-4 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
-                <h5 class="font-bold text-sm mb-2">Legenda Calcoli Tabella Margini</h5>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-                  <p><strong>Costo Cons. Cum.:</strong> Costo totale cumulativo registrato fino a quel mese.</p>
-                  <p><strong>Costo Cons. Mensile:</strong> Costo effettivo del singolo mese.</p>
-                  <p><strong>HH Cons. Cum.:</strong> Ore totali cumulative registrate fino a quel mese.</p>
-                  <p><strong>HH Cons. Mensile:</strong> Ore effettive del singolo mese.</p>
-                  <p><strong>Costo/HH:</strong> Costo medio orario cumulativo (Costo Cons. Cum. / HH Cons. Cum.).</p>
-                  <p><strong>Ricavo Cons.:</strong> Totale fatturato per la commessa fino al mese del record.</p>
-                  <p><strong>Margine %:</strong> (Ricavo Cons. - Costo Cons. Cum.) / Ricavo Cons.</p>
-                  <p><strong>Ricavo Budget Tot:</strong> Valore dell'ultimo budget approvato per la commessa.</p>
-                  <p><strong>Costo Budget (EAC):</strong> Stima del costo totale a finire (Estimate At Completion). Calcolato come: Ricavo Budget Tot * (1 - Margine %).</p>
-                  <p><strong>Costo ETC:</strong> Stima del costo rimanente (Estimate To Complete). Calcolato come: EAC - Costo Cons.</p>
-                  <p><strong>Ore ETC:</strong> Stima delle ore rimanenti. Calcolato come: Costo ETC / Costo/HH.</p>
-                  <p><strong>% Avanz.:</strong> Percentuale di avanzamento costi. Calcolato come: Costo Cons. / EAC.</p>
-                  <p><strong>Ricavo Maturato:</strong> Valore del ricavo maturato in base all'avanzamento. Calcolato come: Ricavo Budget Tot * % Avanz.</p>
-                  <p><strong>ETC Revenue:</strong> Ricavo rimanente da maturare. Calcolato come: Ricavo Budget Tot - Ricavo Maturato.</p>
+              <div id="margini-legend-container" class="legend-content hidden mt-4 p-4 bg-gray-50 rounded-lg text-xs text-gray-600 border-l-4 border-blue-400">
+                <!-- T&M Legend -->
+                <div id="margini-legend-tm">
+                  <h5 class="font-bold text-sm mb-2">Legenda Calcoli (T&M / Canone)</h5>
+                  <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <p><strong>Costo Cons. Cum.:</strong> Costo totale cumulativo registrato fino a quel mese.</p>
+                    <p><strong>Costo Cons. Mensile:</strong> Costo effettivo del singolo mese.</p>
+                    <p><strong>HH Cons. Cum.:</strong> Ore totali cumulative registrate fino a quel mese.</p>
+                    <p><strong>HH Cons. Mensile:</strong> Ore effettive del singolo mese.</p>
+                    <p><strong>Costo/HH:</strong> Costo medio orario cumulativo (Costo Cons. Cum. / HH Cons. Cum.).</p>
+                    <p><strong>Ricavo Cons.:</strong> Totale fatturato per la commessa fino al mese del record.</p>
+                    <p><strong>Margine %:</strong> (Ricavo Cons. - Costo Cons. Cum.) / Ricavo Cons.</p>
+                    <p><strong>Ricavo Budget Tot:</strong> Valore dell'ultimo budget approvato per la commessa.</p>
+                    <p><strong>Costo Budget (EAC):</strong> Stima del costo totale a finire (Estimate At Completion). Calcolato come: Ricavo Budget Tot * (1 - Margine %).</p>
+                    <p><strong>Costo ETC:</strong> Stima del costo rimanente (Estimate To Complete). Calcolato come: EAC - Costo Cons.</p>
+                    <p><strong>Ore ETC:</strong> Stima delle ore rimanenti. Calcolato come: Costo ETC / Costo/HH.</p>
+                    <p><strong>% Avanz.:</strong> Percentuale di avanzamento costi. Calcolato come: Costo Cons. / EAC.</p>
+                    <p><strong>Ricavo Maturato:</strong> Valore del ricavo maturato in base all'avanzamento. Calcolato come: Ricavo Budget Tot * % Avanz.</p>
+                    <p><strong>ETC Revenue:</strong> Ricavo rimanente da maturare. Calcolato come: Ricavo Budget Tot - Ricavo Maturato.</p>
+                  </div>
+                </div>
+                <!-- Corpo Legend -->
+                <div id="margini-legend-corpo" class="hidden">
+                  <h5 class="font-bold text-sm mb-2">Legenda Calcoli (Corpo)</h5>
+                  <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <p><strong>Costo Cons. Cum.:</strong> Costo totale cumulativo registrato fino a quel mese.</p>
+                    <p><strong>GG da Fare:</strong> Giorni uomo stimati per completare il lavoro.</p>
+                    <p><strong>Costo Medio HH:</strong> Costo orario medio usato per la stima. Se non inserito, è calcolato dal budget. Un (*) indica che il valore è calcolato.</p>
+                    <p><strong>HH da Fare:</strong> Ore stimate per completare il lavoro (GG da Fare * 8).</p>
+                    <p><strong>Costo ETC:</strong> Stima del costo rimanente (Estimate To Complete). Calcolato come: HH da Fare * Costo Medio HH.</p>
+                    <p><strong>Costo Totale (EAC):</strong> Stima del costo totale a finire (Estimate At Completion). Calcolato come: Costo ETC + Costo Cons. Cum.</p>
+                    <p><strong>Margine %:</strong> (Ricavo Budget Tot - EAC) / Ricavo Budget Tot.</p>
+                    <p><strong>% Avanz.:</strong> Percentuale di avanzamento costi. Calcolato come: Costo Cons. Cum. / EAC.</p>
+                    <p><strong>Ricavo Maturato:</strong> Valore del ricavo maturato in base all'avanzamento. Calcolato come: Ricavo Budget Tot * % Avanz.</p>
+                    <p><strong>ETC Revenue:</strong> Ricavo rimanente da maturare. Calcolato come: Ricavo Budget Tot - Ricavo Maturato.</p>
+                  </div>
                 </div>
               </div>
             </div>

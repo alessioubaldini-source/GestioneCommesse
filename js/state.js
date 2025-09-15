@@ -30,6 +30,7 @@ export const state = {
     sogliaMargineAttenzione: 35,
     sogliaMargineCritico: 30,
     sogliaMargineEccellente: 45,
+    clientChartGroupBy: 'cliente', // Salva l'ultima selezione del grafico ricavi
     defaultFilters: {
       period: 'all',
       client: 'all',

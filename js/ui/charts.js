@@ -13,19 +13,7 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-let clientChartListenerAdded = false;
-
 export function updateCharts() {
-  // Aggiunge l'event listener per il dropdown del grafico "Ricavi per", ma solo una volta.
-  if (!clientChartListenerAdded) {
-    const clientChartGroupBySelect = document.getElementById('client-chart-group-by');
-    if (clientChartGroupBySelect) {
-      // Quando il dropdown cambia, riesegue solo l'aggiornamento dei grafici.
-      clientChartGroupBySelect.addEventListener('change', updateCharts);
-      clientChartListenerAdded = true;
-    }
-  }
-
   const filteredCommesse = calcService.getFilteredCommesse();
   const { startDate, endDate } = calcService.getPeriodDateRange(state.filters.period);
 
@@ -116,21 +104,41 @@ export function updateCharts() {
   state.charts.budgetVsConsuntivoChart = new Chart(ctx2, {
     type: 'bar',
     data: {
-      labels: budgetConsuntivoData.labels,
+      labels: budgetConsuntivoData.labels.map((label) => (label.length > 15 ? label.substring(0, 15) + '...' : label)),
       datasets: [
         {
           label: 'Budget',
           data: budgetConsuntivoData.budget,
-          backgroundColor: hexToRgba(colors.secondary, 0.7),
+          backgroundColor: hexToRgba(colors.secondary, 0.3), // Colore più leggero per il budget
           borderColor: colors.secondary,
           borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false,
         },
         {
           label: 'Consuntivo',
           data: budgetConsuntivoData.consuntivo,
-          backgroundColor: hexToRgba(colors.primary, 0.7),
-          borderColor: colors.primary,
+          backgroundColor: budgetConsuntivoData.consuntivo.map((cons, index) => {
+            const budget = budgetConsuntivoData.budget[index];
+            if (budget === 0 && cons > 0) return hexToRgba(colors.warning, 0.8);
+            if (budget === 0) return hexToRgba(colors.secondary, 0.8);
+            const ratio = cons / budget;
+            if (ratio > 1) return hexToRgba(colors.danger, 0.8);
+            if (ratio > 0.9) return hexToRgba(colors.warning, 0.8);
+            return hexToRgba(colors.success, 0.8);
+          }),
+          borderColor: budgetConsuntivoData.consuntivo.map((cons, index) => {
+            const budget = budgetConsuntivoData.budget[index];
+            if (budget === 0 && cons > 0) return colors.warning;
+            if (budget === 0) return colors.secondary;
+            const ratio = cons / budget;
+            if (ratio > 1) return colors.danger;
+            if (ratio > 0.9) return colors.warning;
+            return colors.success;
+          }),
           borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false,
         },
       ],
     },
@@ -145,10 +153,34 @@ export function updateCharts() {
         },
         tooltip: {
           callbacks: {
+            title: function (tooltipItems) {
+              // Mostra il nome completo della commessa nel titolo del tooltip
+              return budgetConsuntivoData.labels[tooltipItems[0].dataIndex];
+            },
             label: function (context) {
-              return context.dataset.label + ': ' + utils.formatCurrency(context.raw);
+              return ` ${context.dataset.label}: ${utils.formatCurrency(context.raw)}`;
+            },
+            afterBody: function (tooltipItems) {
+              const index = tooltipItems[0].dataIndex;
+              const budget = budgetConsuntivoData.budget[index];
+              const consuntivo = budgetConsuntivoData.consuntivo[index];
+              const scostamento = consuntivo - budget;
+
+              let scostamentoText = `Scostamento: ${utils.formatCurrency(scostamento)}`;
+              if (budget > 0) {
+                const perc = (scostamento / budget) * 100;
+                scostamentoText += ` (${perc.toFixed(1)}%)`;
+              }
+              return '\n' + scostamentoText;
             },
           },
+          backgroundColor: '#fff',
+          titleColor: '#334155',
+          bodyColor: '#475569',
+          borderColor: '#e2e8f0',
+          borderWidth: 1,
+          padding: 10,
+          displayColors: true,
         },
       },
       scales: {
@@ -166,14 +198,22 @@ export function updateCharts() {
         },
         x: {
           ticks: { color: labelColor },
-          grid: { color: gridColor },
+          grid: {
+            display: false, // Rimuove la griglia verticale per un look più pulito
+          },
         },
       },
     },
   });
 
   // Client Chart
-  const groupBy = document.getElementById('client-chart-group-by')?.value || 'cliente';
+  // Legge l'impostazione salvata e aggiorna la select list
+  const groupBy = state.config.clientChartGroupBy || 'cliente';
+  const clientChartGroupBySelect = document.getElementById('client-chart-group-by');
+  if (clientChartGroupBySelect) {
+    clientChartGroupBySelect.value = groupBy;
+  }
+
   const dataMap = new Map();
   filteredCommesse.forEach((commessa) => {
     let key;
@@ -212,13 +252,13 @@ export function updateCharts() {
   state.charts.clientChart = new Chart(ctx3, {
     type: 'doughnut',
     data: {
-      labels: clientData.map((d) => d.label),
+      labels: clientData.map((d) => (d.label.length > 25 ? d.label.substring(0, 25) + '...' : d.label)),
       datasets: [
         {
           data: clientData.map((d) => d.value),
           backgroundColor: [
             colors.primary, // blue-500
-            '#14b8a6', // teal-500
+            '#0ea5e9', // sky-500
             colors.secondary, // slate-500
             '#4f46e5', // indigo-600
             '#0891b2', // cyan-600
@@ -245,7 +285,7 @@ export function updateCharts() {
               const dataPoint = clientData[context.dataIndex];
               const commesseCount = dataPoint.count;
               const commesseLabel = commesseCount === 1 ? 'commessa' : 'commesse';
-              return `${context.label}: ${utils.formatCurrency(context.raw)} (${commesseCount} ${commesseLabel})`;
+              return `${dataPoint.label}: ${utils.formatCurrency(context.raw)} (${commesseCount} ${commesseLabel})`;
             },
           },
         },
@@ -286,7 +326,8 @@ export function updateCharts() {
   });
 
   const marginiData = {
-    labels: Object.values(distributionCategories).map((c) => c.label),
+    labels: Object.keys(distributionCategories).map((k) => k.charAt(0).toUpperCase() + k.slice(1)),
+    fullLabels: Object.values(distributionCategories).map((c) => c.label),
     values: Object.values(distributionCategories).map((c) => c.count),
   };
   const ctx4 = elements.marginiChartCanvas.getContext('2d');
@@ -314,6 +355,17 @@ export function updateCharts() {
       responsive: true,
       plugins: {
         legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function (tooltipItems) {
+              // Mostra l'etichetta completa con il range nel titolo del tooltip
+              return marginiData.fullLabels[tooltipItems[0].dataIndex];
+            },
+            label: function (context) {
+              return `Numero Commesse: ${context.raw}`;
+            },
+          },
+        },
       },
       scales: {
         y: {

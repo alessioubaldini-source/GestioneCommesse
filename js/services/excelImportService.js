@@ -66,6 +66,7 @@ export function downloadImportTemplate() {
       ['Nome Commessa', 'Cliente', 'Data Inizio (DD/MM/YYYY)', 'Stato', 'Tipologia'],
       ['Nuovo Progetto Fantastico', 'Nuovo Cliente SPA', '01/10/2024', 'Pianificazione', 'T&M'],
       ['Manutenzione Sistema Legacy', 'Cliente Esistente SRL', '01/01/2024', 'Attivo', 'Canone'],
+      ['Progetto a Corpo Esempio', 'Cliente Esistente SRL', '01/05/2024', 'Attivo', 'Corpo'],
     ];
     const infoWS = XLSX.utils.aoa_to_sheet(infoData);
     infoWS['!cols'] = [{ wch: 30 }, { wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 15 }];
@@ -74,8 +75,8 @@ export function downloadImportTemplate() {
     // Sheet: Budget
     const budgetData = [
       ['Nome Commessa', 'ID Budget', 'Mese Competenza (YYYY-MM)', 'Figura', 'Tariffa', 'Giorni', 'Importo Totale (se non dettagliato)'],
-      ['Nuovo Progetto Fantastico', 'BUDGET_01', '2024-10', 'Senior Developer', 500, 20, ''],
-      ['Nuovo Progetto Fantastico', 'BUDGET_01', '2024-10', 'Junior Developer', 300, 15, ''],
+      ['Nuovo Progetto Fantastico', 'BUDGET_01', '2024-10', 'Senior Developer', 500, 20.5, ''],
+      ['Nuovo Progetto Fantastico', 'BUDGET_01', '2024-10', 'Junior Developer', 300, 15.25, ''],
       ['Manutenzione Sistema Legacy', 'BUDGET_02', '2024-11', '', '', '', 50000],
     ];
     const budgetWS = XLSX.utils.aoa_to_sheet(budgetData);
@@ -104,12 +105,13 @@ export function downloadImportTemplate() {
 
     // Sheet: Forecast
     const forecastData = [
-      ['Nome Commessa', 'Mese (YYYY-MM)', 'Costo Consuntivi', 'HH Consuntivo'],
-      ['Nuovo Progetto Fantastico', '2024-10', 18000, 300],
-      ['Manutenzione Sistema Legacy', '2024-01', 5000, 100],
+      ['Nome Commessa', 'Mese (YYYY-MM)', 'Costo Consuntivi', 'HH Consuntivo (per T&M/Canone)', 'GG da Fare (per Corpo)', 'Costo Medio HH (per Corpo)'],
+      ['Nuovo Progetto Fantastico', '2024-10', 18000, 300, '', ''],
+      ['Manutenzione Sistema Legacy', '2024-01', 5000, 100, '', ''],
+      ['Progetto a Corpo Esempio', '2024-05', 25000, '', 50, 65],
     ];
     const forecastWS = XLSX.utils.aoa_to_sheet(forecastData);
-    forecastWS['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
+    forecastWS['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 30 }, { wch: 25 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, forecastWS, TEMPLATE_SHEETS.FORECAST);
 
     XLSX.writeFile(wb, 'Template_Import_Commesse.xlsx');
@@ -244,8 +246,8 @@ export async function importCommessaFromExcel(file) {
           id: generateId(state.dati.budget.concat(newBudgetDetails)),
           budgetMasterId: budgetMasterMap.get(masterKey),
           figura: row['Figura'],
-          tariffa: parseFloat(row['Tariffa']),
-          giorni: parseInt(row['Giorni']),
+          tariffa: parseFloat(row['Tariffa']) || 0,
+          giorni: parseFloat(row['Giorni']) || 0,
         };
         newBudgetDetails.push(newDetail);
       });
@@ -287,15 +289,30 @@ export async function importCommessaFromExcel(file) {
     const forecastSheet = wb.Sheets[TEMPLATE_SHEETS.FORECAST];
     if (forecastSheet) {
       XLSX.utils.sheet_to_json(forecastSheet).forEach((row) => {
-        const commessaId = getCommessaId(row['Nome Commessa']);
-        if (!commessaId) return;
-        newMargini.push({
+        const commessa = commesseMap.get(row['Nome Commessa']);
+        if (!commessa) {
+          showToast(`Commessa "${row['Nome Commessa']}" non trovata in "Info Commessa" per il record di Forecast. Record saltato.`, 'warning', 5000);
+          return;
+        }
+
+        const newMargine = {
           id: generateId(state.dati.margini.concat(newMargini)),
-          commessaId: commessaId,
+          commessaId: commessa.id,
           mese: row['Mese (YYYY-MM)'],
-          costoConsuntivi: parseFloat(row['Costo Consuntivi']),
-          hhConsuntivo: parseFloat(row['HH Consuntivo']),
-        });
+          costoConsuntivi: parseFloat(row['Costo Consuntivi']) || 0,
+          hhConsuntivo: 0,
+          ggDaFare: 0,
+          costoMedioHH: 0,
+        };
+
+        if (commessa.tipologia === 'Corpo') {
+          newMargine.ggDaFare = parseFloat(row['GG da Fare (per Corpo)']) || 0;
+          newMargine.costoMedioHH = parseFloat(row['Costo Medio HH (per Corpo)']) || 0;
+        } else {
+          newMargine.hhConsuntivo = parseFloat(row['HH Consuntivo (per T&M/Canone)']) || 0;
+        }
+
+        newMargini.push(newMargine);
       });
     }
 

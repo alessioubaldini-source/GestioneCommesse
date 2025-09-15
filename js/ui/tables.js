@@ -55,6 +55,13 @@ export function sortCommesseTable(sortBy) {
         return margineB - margineA; // Sort descending by margin
       case 'data':
         return new Date(a.dataInizio) - new Date(b.dataInizio);
+      case 'ultimo-forecast':
+        const forecastA = calcService.getDataUltimoForecast(a.id);
+        const forecastB = calcService.getDataUltimoForecast(b.id);
+        if (forecastA === null && forecastB === null) return 0;
+        if (forecastA === null) return 1; // a is greater (comes last)
+        if (forecastB === null) return -1; // b is greater (comes last)
+        return forecastB.localeCompare(forecastA); // Sort descending by date string 'YYYY-MM'
       default:
         return 0;
     }
@@ -87,13 +94,24 @@ export function updateTables() {
         const margineText = margineReale !== null ? `${margineReale.toFixed(2)}%` : 'N/A';
         const margineClass = margineReale !== null && margineReale < state.config.sogliaMargineAttenzione ? 'text-red-600 font-bold alert-warning' : 'text-green-600';
 
+        const ultimoForecast = calcService.getDataUltimoForecast(commessa.id);
+        let ultimoForecastText = '<span class="text-gray-400">N/A</span>';
+        if (ultimoForecast) {
+          const [year, month] = ultimoForecast.split('-');
+          const date = new Date(year, month - 1);
+          // 'it-IT' for Italian month names, e.g., "gen"
+          const formattedDate = date.toLocaleString('it-IT', { month: 'short', year: 'numeric' });
+          ultimoForecastText = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1).replace('.', ''); // Rimuove il punto da "gen."
+        }
+
+        const truncatedNome = commessa.nome.length > 35 ? commessa.nome.substring(0, 35) + '...' : commessa.nome;
         const tipologiaClass =
-          commessa.tipologia === 'T&M' ? 'bg-purple-100 text-purple-800' : commessa.tipologia === 'Corpo' ? 'bg-indigo-100 text-indigo-800' : commessa.tipologia === 'Canone' ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-800';
+          commessa.tipologia === 'T&M' ? 'bg-purple-100 text-purple-800' : commessa.tipologia === 'Corpo' ? 'bg-indigo-100 text-indigo-800' : commessa.tipologia === 'Canone' ? 'bg-sky-100 text-sky-800' : 'bg-gray-100 text-gray-800';
 
         return `
               <tr class="hover:bg-gray-50">
                   <td class="px-4 py-3 text-sm font-medium">
-                    <button class="text-blue-600 hover:underline font-semibold commessa-link-btn text-left" data-commessa-id="${commessa.id}">${commessa.nome}</button>
+                    <button class="text-blue-600 hover:underline font-semibold commessa-link-btn text-left" data-commessa-id="${commessa.id}" title="${commessa.nome}">${truncatedNome}</button>
                   </td>
                   <td class="px-4 py-3 text-sm">${commessa.cliente}</td>
                   <td class="px-4 py-3 text-sm"><span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${tipologiaClass}">${commessa.tipologia}</span></td>
@@ -101,6 +119,7 @@ export function updateTables() {
                   <td class="px-4 py-3 text-sm"><span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${
                     commessa.stato === 'Attivo' ? 'bg-green-100 text-green-800' : commessa.stato === 'Completato' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                   }">${commessa.stato}</span></td>
+                  <td class="px-4 py-3 text-sm">${ultimoForecastText}</td>
                   <td class="px-4 py-3 text-sm text-right">${utils.formatCurrency(ricaviReali)}</td>
                   <td class="px-4 py-3 text-sm text-right ${margineClass}">${margineText}</td>
                   <td class="px-4 py-3 text-center">
@@ -201,7 +220,7 @@ function renderBudgetTable(commessaId) {
                   <td class="px-4 py-3 text-sm">-</td>
                   <td class="px-4 py-3 text-sm font-medium">${item.figura}</td>
                   <td class="px-4 py-3 text-sm text-right">${utils.formatCurrency(item.tariffa)}</td>
-                  <td class="px-4 py-3 text-sm text-right">${item.giorni}</td>
+                  <td class="px-4 py-3 text-sm text-right">${(item.giorni || 0).toFixed(2)}</td>
                   <td class="px-4 py-3 text-sm text-right font-medium">${utils.formatCurrency(item.tariffa * item.giorni)}</td>
                   <td class="px-4 py-3 text-center">
                     <div class="flex items-center justify-center gap-2">
@@ -309,43 +328,35 @@ function renderFattureTable(commessaId) {
   }
 }
 
-function renderMarginiTable(commessaId) {
+function renderMarginiTableTM(commessaId, bodyEl, alertContainer) {
+  const headerEl = document.getElementById('margini-table-header-container');
+  headerEl.innerHTML = `
+    <tr>
+      <th class="px-3 py-3 text-left font-medium text-gray-900 whitespace-nowrap">Mese</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Cum.</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Mensile</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons. Cum.</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">HH Cons. Mensile</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Costo/HH</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Cons.</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Margine %</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Budget Tot</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Budget (EAC)</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900 bg-green-50">Costo ETC</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900 bg-green-50">Ore ETC</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">% Avanz.</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Maturato</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">ETC Revenue</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Azioni</th>
+    </tr>
+  `;
+
   const marginiCommessa = state.dati.margini.filter((m) => m.commessaId === commessaId);
-
-  const alertContainer = elements.margineAlert;
-  alertContainer.classList.add('hidden'); // Hide by default
-
-  // Alert for low margin based on the LATEST forecast record
-  const margineUltimoForecast = calcService.calcolaMargineUltimoForecast(commessaId);
-  if (margineUltimoForecast !== null) {
-    const { sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
-    if (margineUltimoForecast < sogliaMargineAttenzione) {
-      const isCritical = margineUltimoForecast < sogliaMargineCritico;
-      const bgColor = isCritical ? 'bg-red-100' : 'bg-yellow-100';
-      const textColor = isCritical ? 'text-red-800' : 'text-yellow-800';
-      const iconColor = isCritical ? 'text-red-500' : 'text-yellow-500';
-      const latestForecastMonth = marginiCommessa.reduce((latest, current) => (current.mese > latest.mese ? current : latest)).mese;
-      const message = isCritical
-        ? `Attenzione: il margine dell'ultimo forecast (${latestForecastMonth}) è ${margineUltimoForecast.toFixed(2)}%, a un livello critico (sotto il ${sogliaMargineCritico}%).`
-        : `Attenzione: il margine dell'ultimo forecast (${latestForecastMonth}) è ${margineUltimoForecast.toFixed(2)}%, sotto la soglia di attenzione (${sogliaMargineAttenzione}%).`;
-
-      alertContainer.innerHTML = `
-        <div class="flex items-center ${textColor} ${bgColor} p-3 rounded-md">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 shrink-0 ${iconColor}" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M8.257 3.099c.636-1.21 2.37-1.21 3.006 0l5.25 10.002c.636 1.21-.24 2.649-1.503 2.649H4.5c-1.263 0-2.139-1.439-1.503-2.649l5.25-10.002zM10 12a1 1 0 110-2 1 1 0 010 2zm0-3a1 1 0 00-1 1v1a1 1 0 102 0v-1a1 1 0 00-1-1z" clip-rule="evenodd" />
-          </svg>
-          <span>${message}</span>
-        </div>
-      `;
-      alertContainer.classList.remove('hidden');
-    }
-  }
-
   if (marginiCommessa.length > 0) {
     marginiCommessa.sort((a, b) => b.mese.localeCompare(a.mese)); // Descending for display
     const marginiCommessaAsc = [...marginiCommessa].sort((a, b) => a.mese.localeCompare(b.mese)); // Ascending for calculation
 
-    elements.marginiTable.innerHTML = marginiCommessa
+    bodyEl.innerHTML = marginiCommessa
       .map((margine) => {
         const indexInAsc = marginiCommessaAsc.findIndex((m) => m.id === margine.id);
         const prevMargine = indexInAsc > 0 ? marginiCommessaAsc[indexInAsc - 1] : null;
@@ -396,7 +407,143 @@ function renderMarginiTable(commessaId) {
       })
       .join('');
   } else {
-    elements.marginiTable.innerHTML = createEmptyStateHTML('Nessun forecast inserito per questa commessa.', 'Aggiungi Forecast', 'margine');
+    bodyEl.innerHTML = createEmptyStateHTML('Nessun forecast inserito per questa commessa.', 'Aggiungi Forecast', 'margine');
+  }
+}
+
+function renderMarginiTableCorpo(commessaId, bodyEl, alertContainer) {
+  const headerEl = document.getElementById('margini-table-header-container');
+  headerEl.innerHTML = `
+    <tr>
+      <th class="px-3 py-3 text-left font-medium text-gray-900 whitespace-nowrap">Mese</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Cons. Cum.</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">GG da Fare</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Medio HH</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">HH da Fare</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900 bg-green-50">Costo ETC</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Costo Totale (EAC)</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Margine %</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">% Avanz.</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Ricavo Maturato</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">ETC Revenue</th>
+      <th class="px-2 py-3 text-center font-medium text-gray-900">Azioni</th>
+    </tr>
+  `;
+
+  const marginiCommessa = state.dati.margini.filter((m) => m.commessaId === commessaId);
+  if (marginiCommessa.length > 0) {
+    marginiCommessa.sort((a, b) => b.mese.localeCompare(a.mese)); // Descending for display
+
+    const ricavoTotaleBudget = calcService.calcolaTotaleBudgetRecent(commessaId);
+
+    bodyEl.innerHTML = marginiCommessa
+      .map((margine) => {
+        const costoConsCum = margine.costoConsuntivi;
+        const ggDaFare = margine.ggDaFare || 0;
+
+        const costoMedioOrarioUsato = margine.costoMedioHH > 0 ? margine.costoMedioHH : calcService.calcolaCostoMedioOrarioBudget(commessaId);
+        const isFromBudget = !(margine.costoMedioHH > 0);
+
+        if (costoMedioOrarioUsato === 0) {
+          // Non possiamo calcolare nulla se non abbiamo un costo orario
+          return `<tr><td colspan="11" class="text-center text-xs text-red-600 p-2">Impossibile calcolare il forecast per ${margine.mese} perché il costo medio orario non è disponibile (né inserito, né calcolabile dal budget).</td></tr>`;
+        }
+
+        const hhDaFare = ggDaFare * 8;
+        const costoETC = hhDaFare * costoMedioOrarioUsato;
+        const costoTotaleEAC = costoETC + costoConsCum;
+        const marginePerc = ricavoTotaleBudget > 0 ? ((ricavoTotaleBudget - costoTotaleEAC) / ricavoTotaleBudget) * 100 : 0;
+        const percentualeAvanzamento = costoTotaleEAC > 0 ? (costoConsCum / costoTotaleEAC) * 100 : 0;
+        const ricavoMaturato = ricavoTotaleBudget * (percentualeAvanzamento / 100);
+        const etcRevenue = ricavoTotaleBudget - ricavoMaturato;
+
+        return `
+          <tr class="hover:bg-gray-50">
+              <td class="px-3 py-3 font-medium text-xs whitespace-nowrap">${margine.mese}</td>
+              <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${utils.formatCurrency(costoConsCum)}</td>
+              <td class="px-2 py-3 text-center text-xs">${ggDaFare}</td>
+              <td class="px-2 py-3 text-center text-xs" title="${isFromBudget ? 'Calcolato dal budget' : 'Inserito manualmente'}">
+                ${utils.formatCurrency(costoMedioOrarioUsato)}
+                ${isFromBudget ? '<span class="text-gray-400">*</span>' : ''}
+              </td>
+              <td class="px-2 py-3 text-center text-xs">${hhDaFare.toFixed(0)}</td>
+              <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${utils.formatCurrency(costoETC)}</td>
+              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(costoTotaleEAC)}</td>
+              <td class="px-2 py-3 text-center text-xs">${marginePerc.toFixed(2)}%</td>
+              <td class="px-2 py-3 text-center text-xs">${percentualeAvanzamento.toFixed(2)}%</td>
+              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoMaturato)}</td>
+              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(etcRevenue)}</td>
+              <td class="px-2 py-3 text-center">
+                <div class="flex items-center justify-center gap-1">
+                  <button data-action="edit" data-id="${margine.id}" class="text-blue-600 hover:text-blue-800" title="Modifica">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                  </button>
+                  <button data-action="delete" data-id="${margine.id}" class="text-red-600 hover:text-red-800" title="Elimina">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                  </button>
+                </div>
+              </td>
+          </tr>
+        `;
+      })
+      .join('');
+  } else {
+    bodyEl.innerHTML = createEmptyStateHTML('Nessun forecast inserito per questa commessa.', 'Aggiungi Forecast', 'margine');
+  }
+}
+
+function renderMarginiTable(commessaId) {
+  const commessa = state.dati.commesse.find((c) => c.id === commessaId);
+  const alertContainer = elements.margineAlert;
+  const bodyEl = elements.marginiTable;
+  const headerEl = document.getElementById('margini-table-header-container');
+
+  alertContainer.classList.add('hidden'); // Hide by default
+
+  // Alert for low margin based on the LATEST forecast record
+  const margineUltimoForecast = calcService.calcolaMargineUltimoForecast(commessaId);
+  if (margineUltimoForecast !== null) {
+    const { sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
+    if (margineUltimoForecast < sogliaMargineAttenzione) {
+      const isCritical = margineUltimoForecast < sogliaMargineCritico;
+      const bgColor = isCritical ? 'bg-red-100' : 'bg-yellow-100';
+      const textColor = isCritical ? 'text-red-800' : 'text-yellow-800';
+      const iconColor = isCritical ? 'text-red-500' : 'text-yellow-500';
+      const latestForecastMonth = state.dati.margini.filter((m) => m.commessaId === commessaId).reduce((latest, current) => (current.mese > latest.mese ? current : latest)).mese;
+      const message = isCritical
+        ? `Attenzione: il margine dell'ultimo forecast (${latestForecastMonth}) è ${margineUltimoForecast.toFixed(2)}%, a un livello critico (sotto il ${sogliaMargineCritico}%).`
+        : `Attenzione: il margine dell'ultimo forecast (${latestForecastMonth}) è ${margineUltimoForecast.toFixed(2)}%, sotto la soglia di attenzione (${sogliaMargineAttenzione}%).`;
+
+      alertContainer.innerHTML = `
+        <div class="flex items-center ${textColor} ${bgColor} p-3 rounded-md">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 shrink-0 ${iconColor}" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.636-1.21 2.37-1.21 3.006 0l5.25 10.002c.636 1.21-.24 2.649-1.503 2.649H4.5c-1.263 0-2.139-1.439-1.503-2.649l5.25-10.002zM10 12a1 1 0 110-2 1 1 0 010 2zm0-3a1 1 0 00-1 1v1a1 1 0 102 0v-1a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      alertContainer.classList.remove('hidden');
+    }
+  }
+
+  if (!commessa) {
+    if (headerEl) headerEl.innerHTML = '';
+    if (bodyEl) bodyEl.innerHTML = createEmptyStateHTML('Seleziona una commessa per vedere i forecast.', 'Nuova Commessa', 'commessa');
+    return;
+  }
+
+  const legendTm = document.getElementById('margini-legend-tm');
+  const legendCorpo = document.getElementById('margini-legend-corpo');
+
+  if (commessa.tipologia === 'Corpo') {
+    renderMarginiTableCorpo(commessaId, bodyEl, alertContainer);
+    if (legendTm) legendTm.classList.add('hidden');
+    if (legendCorpo) legendCorpo.classList.remove('hidden');
+  } else {
+    // Default to T&M logic for 'T&M', 'Canone', etc.
+    renderMarginiTableTM(commessaId, bodyEl, alertContainer);
+    if (legendTm) legendTm.classList.remove('hidden');
+    if (legendCorpo) legendCorpo.classList.add('hidden');
   }
 }
 

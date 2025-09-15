@@ -70,6 +70,16 @@ export function initEventListeners() {
     ui.applyFilters();
   });
 
+  // Listener per il dropdown del grafico "Ricavi per" per salvare la scelta
+  const clientChartGroupBySelect = document.getElementById('client-chart-group-by');
+  if (clientChartGroupBySelect) {
+    clientChartGroupBySelect.addEventListener('change', (e) => {
+      state.config.clientChartGroupBy = e.target.value;
+      data.saveConfig();
+      ui.updateCharts(); // Aggiorna solo i grafici, non è necessario riapplicare tutti i filtri
+    });
+  }
+
   // Export Excel
   elements.exportExcel.addEventListener('click', () => exportToExcel());
 

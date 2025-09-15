@@ -215,10 +215,11 @@ export function updateCommesseMonitorate() {
       }
       iconsHTML += '</div>';
 
+      const truncatedNome = commessa.nome.length > 30 ? commessa.nome.substring(0, 30) + '...' : commessa.nome;
       return `
           <div class="p-3 rounded-lg ${bgColor} border-l-4 ${borderColor} flex justify-between items-center">
               <div>
-                  <button class="text-blue-600 hover:underline font-semibold commessa-link-btn text-left" data-commessa-id="${commessa.id}">${commessa.nome}</button>
+                  <button class="text-blue-600 hover:underline font-semibold commessa-link-btn text-left" data-commessa-id="${commessa.id}" title="${commessa.nome}">${truncatedNome}</button>
                   <p class="text-xs text-gray-600">${commessa.cliente}</p>
                   ${iconsHTML}
               </div>
@@ -283,7 +284,7 @@ export function updateCommessaHeader() {
   // Tipologia con stile badge (corretto per sfondo scuro)
   const tipologiaElement = document.getElementById('selected-tipologia');
   if (tipologiaElement) {
-    const tipologiaClass = commessa.tipologia === 'T&M' ? 'bg-purple-500 text-white' : commessa.tipologia === 'Corpo' ? 'bg-indigo-500 text-white' : commessa.tipologia === 'Canone' ? 'bg-cyan-500 text-white' : 'bg-gray-500 text-white';
+    const tipologiaClass = commessa.tipologia === 'T&M' ? 'bg-purple-500 text-white' : commessa.tipologia === 'Corpo' ? 'bg-indigo-500 text-white' : commessa.tipologia === 'Canone' ? 'bg-sky-500 text-white' : 'bg-gray-500 text-white';
     tipologiaElement.innerHTML = `<span class="inline-block px-3 py-1 text-sm font-medium rounded-full ${tipologiaClass}">${commessa.tipologia}</span>`;
   }
 
@@ -327,7 +328,7 @@ export function updateCommessaSelect() {
     state.selectedCommessa = state.dati.commesse[0].id;
   }
 
-  select.innerHTML = state.dati.commesse.map((c) => `<option value="${c.id}" ${c.id === state.selectedCommessa ? 'selected' : ''}>${c.nome} - ${c.cliente}</option>`).join('');
+  select.innerHTML = state.dati.commesse.map((c) => `<option value="${c.id}" title="${c.nome} - ${c.cliente}" ${c.id === state.selectedCommessa ? 'selected' : ''}>${c.nome} - ${c.cliente}</option>`).join('');
 
   select.value = state.selectedCommessa;
 }

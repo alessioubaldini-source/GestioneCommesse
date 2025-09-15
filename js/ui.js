@@ -269,7 +269,7 @@ export function openModal(type, id = null) {
                 <div id="budget-detail-fields">
                     <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Figura</label><select name="figura" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required><option value="">Seleziona figura</option><option value="Senior Manager">Senior Manager</option><option value="Project Manager">Project Manager</option><option value="Software Engineer">Software Engineer</option><option value="Junior Developer">Junior Developer</option></select></div>
                     <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tariffa €</label><input type="number" step="0.01" name="tariffa" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-                    <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giorni</label><input type="number" name="giorni" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+                    <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giorni</label><input type="number" step="0.01" name="giorni" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
                 </div>
 
                 <div id="budget-total-field" class="hidden">
@@ -281,7 +281,7 @@ export function openModal(type, id = null) {
                 <div class="mb-4">
                 <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Figura</label><select name="figura" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required><option value="">Seleziona figura</option><option value="Senior Manager">Senior Manager</option><option value="Project Manager">Project Manager</option><option value="Software Engineer">Software Engineer</option><option value="Junior Developer">Junior Developer</option></select></div>
                 <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tariffa €</label><input type="number" step="0.01" name="tariffa" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giorni</label><input type="number" name="giorni" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
+                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Giorni</label><input type="number" step="0.01" name="giorni" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
       }
       break;
     case 'ordine':
@@ -299,11 +299,24 @@ export function openModal(type, id = null) {
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Importo €</label><input type="number" step="0.01" name="importo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
       break;
     case 'margine':
-      titleText = id ? 'Modifica Margine' : 'Nuovo Forecast Margine';
-      fieldsHTML = `
+      titleText = id ? 'Modifica Forecast' : 'Nuovo Forecast';
+      const commessa = state.dati.commesse.find((c) => c.id === state.selectedCommessa);
+
+      if (commessa && commessa.tipologia === 'Corpo') {
+        fieldsHTML = `
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese</label><input type="month" name="mese" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Consuntivi €</label><input type="number" step="0.01" name="costoConsuntivi" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">HH Consuntivo</label><input type="number" step="0.01" name="hhConsuntivo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Cons. Cum. €</label><input type="number" step="0.01" name="costoConsuntivi" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">GG da Fare</label><input type="number" step="0.01" name="ggDaFare" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Medio HH €</label><input type="number" step="0.01" name="costoMedioHH" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" placeholder="Default da budget" title="Se lasciato vuoto, verrà usato il costo medio orario del budget."></div>
+            `;
+      } else {
+        // Default for T&M, Canone, etc.
+        fieldsHTML = `
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese</label><input type="month" name="mese" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Consuntivi Cum. €</label><input type="number" step="0.01" name="costoConsuntivi" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">HH Consuntivo Cum.</label><input type="number" step="0.01" name="hhConsuntivo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+            `;
+      }
       break;
   }
 
@@ -319,6 +332,21 @@ export function openModal(type, id = null) {
         }
       }
     }, 100);
+  } else if (type === 'margine') {
+    // Pre-fill logic for new forecast
+    const commessa = state.dati.commesse.find((c) => c.id === state.selectedCommessa);
+    if (commessa && commessa.tipologia === 'Corpo') {
+      const lastForecast = state.dati.margini.filter((m) => m.commessaId === state.selectedCommessa).sort((a, b) => b.mese.localeCompare(a.mese))[0];
+
+      if (lastForecast) {
+        setTimeout(() => {
+          const field = elements.modalForm.elements['costoMedioHH'];
+          if (field) {
+            field.value = lastForecast.costoMedioHH || '';
+          }
+        }, 100);
+      }
+    }
   }
 
   setTimeout(() => {

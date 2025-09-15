@@ -82,6 +82,32 @@ export function calcolaMarginRealeCommessa(commessaId) {
   return ((ricaviReali - costiReali) / ricaviReali) * 100;
 }
 
+export function calcolaCostoMedioOrarioBudget(commessaId) {
+  const budgetMasters = state.dati.budgetMaster?.filter((bm) => bm.commessaId === commessaId) || [];
+  if (budgetMasters.length === 0) return 0;
+
+  const latestMaster = budgetMasters.reduce((latest, current) => {
+    return current.meseCompetenza > latest.meseCompetenza ? current : latest;
+  });
+
+  // Il costo medio orario può essere calcolato solo da un budget dettagliato
+  if (latestMaster.type === 'total') {
+    return 0;
+  }
+
+  const details = state.dati.budget?.filter((b) => b.budgetMasterId === latestMaster.id) || [];
+  if (details.length === 0) return 0;
+
+  // Il costo è dato dalla tariffa giornaliera per i giorni
+  const totalCost = details.reduce((sum, b) => sum + b.tariffa * b.giorni, 0);
+  // Le ore sono i giorni per 8
+  const totalHours = details.reduce((sum, b) => sum + b.giorni, 0) * 8;
+
+  if (totalHours === 0) return 0;
+
+  return totalCost / totalHours;
+}
+
 export function calcolaMargineUltimoForecast(commessaId) {
   const marginiCommessa = state.dati.margini.filter((m) => m.commessaId === commessaId);
   if (marginiCommessa.length === 0) {
@@ -89,13 +115,43 @@ export function calcolaMargineUltimoForecast(commessaId) {
   }
 
   const latestForecast = marginiCommessa.reduce((latest, current) => (current.mese > latest.mese ? current : latest));
+  const commessa = state.dati.commesse.find((c) => c.id === commessaId);
 
-  const ricavoConsuntivoUltimoMese = calcolaMontanteFattureFinoAlMese(commessaId, latestForecast.mese);
+  if (commessa.tipologia === 'Corpo') {
+    const costoMedioOrario = latestForecast.costoMedioHH > 0 ? latestForecast.costoMedioHH : calcolaCostoMedioOrarioBudget(commessaId);
+    const ricavoTotaleBudget = calcolaTotaleBudgetRecent(commessaId);
 
-  if (ricavoConsuntivoUltimoMese > 0) {
-    return ((ricavoConsuntivoUltimoMese - latestForecast.costoConsuntivi) / ricavoConsuntivoUltimoMese) * 100;
+    if (ricavoTotaleBudget === 0 || costoMedioOrario === 0) return 0;
+
+    const costoConsCum = latestForecast.costoConsuntivi;
+    const ggDaFare = latestForecast.ggDaFare || 0;
+    const hhDaFare = ggDaFare * 8;
+    const costoDaFare = hhDaFare * costoMedioOrario;
+    const costoTotaleEAC = costoDaFare + costoConsCum;
+
+    return ((ricavoTotaleBudget - costoTotaleEAC) / ricavoTotaleBudget) * 100;
+  } else {
+    // Logica per T&M e Canone
+    const ricavoConsuntivoUltimoMese = calcolaMontanteFattureFinoAlMese(commessaId, latestForecast.mese);
+
+    if (ricavoConsuntivoUltimoMese > 0) {
+      return ((ricavoConsuntivoUltimoMese - latestForecast.costoConsuntivi) / ricavoConsuntivoUltimoMese) * 100;
+    }
+    return 0;
   }
-  return 0;
+}
+
+export function getDataUltimoForecast(commessaId) {
+  const marginiCommessa = state.dati.margini.filter((m) => m.commessaId === commessaId);
+  if (marginiCommessa.length === 0) {
+    return null;
+  }
+
+  // Find the forecast with the most recent month
+  const latestForecast = marginiCommessa.reduce((latest, current) => (current.mese > latest.mese ? current : latest));
+
+  // The 'mese' property is in 'YYYY-MM' format.
+  return latestForecast.mese;
 }
 
 export function getBudgetMasterData(commessaId) {

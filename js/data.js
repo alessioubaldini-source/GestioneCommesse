@@ -127,8 +127,8 @@ export function saveForm(formData) {
             state.dati.budget[budgetIndex] = {
               ...currentBudget,
               figura: formData.figura,
-              tariffa: parseFloat(formData.tariffa),
-              giorni: parseInt(formData.giorni),
+              tariffa: parseFloat(formData.tariffa) || 0,
+              giorni: parseFloat(formData.giorni) || 0,
             };
 
             // Se sono stati modificati ID Budget o Mese, aggiorna anche il budget master
@@ -172,8 +172,10 @@ export function saveForm(formData) {
           state.dati.margini[margineIndex] = {
             ...state.dati.margini[margineIndex],
             ...formData,
-            costoConsuntivi: parseFloat(formData.costoConsuntivi),
-            hhConsuntivo: parseFloat(formData.hhConsuntivo),
+            costoConsuntivi: parseFloat(formData.costoConsuntivi) || 0,
+            hhConsuntivo: parseFloat(formData.hhConsuntivo) || 0,
+            ggDaFare: parseFloat(formData.ggDaFare) || 0,
+            costoMedioHH: parseFloat(formData.costoMedioHH) || 0,
           };
         }
         break;
@@ -217,7 +219,7 @@ export function saveForm(formData) {
             if (!state.dati.budgetMaster) state.dati.budgetMaster = [];
             state.dati.budgetMaster.push(newBudgetMaster);
 
-            const newBudgetDetail = { id: generateId(state.dati.budget || []), budgetMasterId: newBudgetMaster.id, figura: formData.figura, tariffa: parseFloat(formData.tariffa), giorni: parseInt(formData.giorni) };
+            const newBudgetDetail = { id: generateId(state.dati.budget || []), budgetMasterId: newBudgetMaster.id, figura: formData.figura, tariffa: parseFloat(formData.tariffa) || 0, giorni: parseFloat(formData.giorni) || 0 };
             if (!state.dati.budget) state.dati.budget = [];
             state.dati.budget.push(newBudgetDetail);
           } else {
@@ -225,8 +227,8 @@ export function saveForm(formData) {
               id: generateId(state.dati.budget || []),
               budgetMasterId: parseInt(selectedMasterId),
               figura: formData.figura,
-              tariffa: parseFloat(formData.tariffa),
-              giorni: parseInt(formData.giorni),
+              tariffa: parseFloat(formData.tariffa) || 0,
+              giorni: parseFloat(formData.giorni) || 0,
             };
             if (!state.dati.budget) state.dati.budget = [];
             state.dati.budget.push(newBudgetDetail);
@@ -242,7 +244,15 @@ export function saveForm(formData) {
         state.dati.fatture.push(newFattura);
         break;
       case 'margine':
-        const newMargine = { id: generateId(state.dati.margini), commessaId: selectedCommessa, ...formData, costoConsuntivi: parseFloat(formData.costoConsuntivi), hhConsuntivo: parseFloat(formData.hhConsuntivo) };
+        const newMargine = {
+          id: generateId(state.dati.margini),
+          commessaId: selectedCommessa,
+          ...formData,
+          costoConsuntivi: parseFloat(formData.costoConsuntivi) || 0,
+          hhConsuntivo: parseFloat(formData.hhConsuntivo) || 0,
+          ggDaFare: parseFloat(formData.ggDaFare) || 0,
+          costoMedioHH: parseFloat(formData.costoMedioHH) || 0,
+        };
         state.dati.margini.push(newMargine);
         break;
     }
@@ -368,11 +378,11 @@ function getDefaultData() {
       { id: 2, commessaId: 3, budgetId: 'BUD002', meseCompetenza: '2024-06', type: 'detail', importo: null },
     ],
     budget: [
-      { id: 1, budgetMasterId: 1, figura: 'Senior Manager', tariffa: 700, giorni: 10 },
+      { id: 1, budgetMasterId: 1, figura: 'Senior Manager', tariffa: 700, giorni: 10.5 },
       { id: 2, budgetMasterId: 1, figura: 'Project Manager', tariffa: 596, giorni: 22 },
-      { id: 3, budgetMasterId: 1, figura: 'Software Engineer', tariffa: 430, giorni: 70 },
+      { id: 3, budgetMasterId: 1, figura: 'Software Engineer', tariffa: 430, giorni: 70.25 },
       { id: 4, budgetMasterId: 2, figura: 'Senior Manager', tariffa: 720, giorni: 15 },
-      { id: 5, budgetMasterId: 2, figura: 'Software Engineer', tariffa: 450, giorni: 60 },
+      { id: 5, budgetMasterId: 2, figura: 'Software Engineer', tariffa: 450, giorni: 60.5 },
     ],
     ordini: [
       { id: 1, commessaId: 2, numeroOrdine: 'ORD-2024-001', data: '2024-01-15', importo: 25000 },
@@ -386,10 +396,12 @@ function getDefaultData() {
       { id: 4, commessaId: 3, meseCompetenza: '2024-07', dataInvioConsuntivo: '2024-08-05', importo: 18000 },
     ],
     margini: [
-      { id: 1, commessaId: 2, mese: '2024-01', costoConsuntivi: 9000, hhConsuntivo: 200 },
-      { id: 2, commessaId: 2, mese: '2024-02', costoConsuntivi: 6000, hhConsuntivo: 150 },
-      { id: 3, commessaId: 3, mese: '2024-06', costoConsuntivi: 10000, hhConsuntivo: 220 },
-      { id: 4, commessaId: 3, mese: '2024-07', costoConsuntivi: 14000, hhConsuntivo: 280 },
+      // Commessa a Corpo (ID 2)
+      { id: 1, commessaId: 2, mese: '2024-01', costoConsuntivi: 9000, hhConsuntivo: 0, ggDaFare: 50, costoMedioHH: 65 },
+      { id: 2, commessaId: 2, mese: '2024-02', costoConsuntivi: 15000, hhConsuntivo: 0, ggDaFare: 40, costoMedioHH: 68 },
+      // Commessa a Canone (ID 3)
+      { id: 3, commessaId: 3, mese: '2024-06', costoConsuntivi: 10000, hhConsuntivo: 220, ggDaFare: 0, costoMedioHH: 0 },
+      { id: 4, commessaId: 3, mese: '2024-07', costoConsuntivi: 24000, hhConsuntivo: 500, ggDaFare: 0, costoMedioHH: 0 },
     ],
     activityRules: [
       { startDay: 1, endDay: 3, description: 'Quadratura TS e invio consuntivi', color: 'bg-yellow-100' },
