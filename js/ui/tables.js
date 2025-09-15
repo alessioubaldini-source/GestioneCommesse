@@ -358,41 +358,29 @@ function renderMarginiTableTM(commessaId, bodyEl, alertContainer) {
 
     bodyEl.innerHTML = marginiCommessa
       .map((margine) => {
+        const commessa = state.dati.commesse.find((c) => c.id === commessaId);
         const indexInAsc = marginiCommessaAsc.findIndex((m) => m.id === margine.id);
         const prevMargine = indexInAsc > 0 ? marginiCommessaAsc[indexInAsc - 1] : null;
 
-        const costoMensile = prevMargine ? margine.costoConsuntivi - prevMargine.costoConsuntivi : margine.costoConsuntivi;
-        const hhMensile = prevMargine ? margine.hhConsuntivo - prevMargine.hhConsuntivo : margine.hhConsuntivo;
-
-        const ricavoConsuntivo = calcService.calcolaMontanteFattureFinoAlMese(commessaId, margine.mese);
-        const costoMedioHH = margine.hhConsuntivo > 0 ? margine.costoConsuntivi / margine.hhConsuntivo : 0;
-        const marginePerc = ricavoConsuntivo > 0 ? ((ricavoConsuntivo - margine.costoConsuntivi) / ricavoConsuntivo) * 100 : 0;
-
-        const ricavoBudgetTotale = calcService.calcolaTotaleBudgetRecent(commessaId);
-        const costoBudgetTotaleEAC = ricavoBudgetTotale * (1 - marginePerc / 100);
-        const costoStimaAFinireETC = costoBudgetTotaleEAC - margine.costoConsuntivi;
-        const oreStimaAFinireETC = costoMedioHH > 0 ? costoStimaAFinireETC / costoMedioHH : 0;
-        const percentualeAvanzamentoCosti = costoBudgetTotaleEAC > 0 ? (margine.costoConsuntivi / costoBudgetTotaleEAC) * 100 : 0;
-        const ricavoMaturato = ricavoBudgetTotale * (percentualeAvanzamentoCosti / 100);
-        const etcRevenue = ricavoBudgetTotale - ricavoMaturato;
+        const metrics = calcService.getForecastMetrics(margine, commessa, prevMargine);
 
         return `
                     <tr class="hover:bg-gray-50">
                         <td class="px-3 py-3 font-medium text-xs whitespace-nowrap">${margine.mese}</td>
-                        <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${utils.formatCurrency(margine.costoConsuntivi)}</td>
-                        <td class="px-2 py-3 text-center text-gray-600 font-medium text-xs">${utils.formatCurrency(costoMensile)}</td>
-                        <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${margine.hhConsuntivo.toFixed(2)}</td>
-                        <td class="px-2 py-3 text-center text-gray-600 font-medium text-xs">${hhMensile.toFixed(2)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(costoMedioHH)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoConsuntivo)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${marginePerc.toFixed(2)}%</td>
-                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoBudgetTotale)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(costoBudgetTotaleEAC)}</td>
-                        <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${utils.formatCurrency(costoStimaAFinireETC)}</td>
-                        <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${oreStimaAFinireETC.toFixed(2)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${percentualeAvanzamentoCosti.toFixed(2)}%</td>
-                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoMaturato)}</td>
-                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(etcRevenue)}</td>
+                        <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${utils.formatCurrency(metrics.costoConsCum)}</td>
+                        <td class="px-2 py-3 text-center text-gray-600 font-medium text-xs">${utils.formatCurrency(metrics.costoMensile)}</td>
+                        <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${(metrics.hhConsuntivo || 0).toFixed(2)}</td>
+                        <td class="px-2 py-3 text-center text-gray-600 font-medium text-xs">${(metrics.hhMensile || 0).toFixed(2)}</td>
+                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.costoMedioHH)}</td>
+                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.ricavoConsuntivo)}</td>
+                        <td class="px-2 py-3 text-center text-xs">${metrics.marginePerc.toFixed(2)}%</td>
+                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.ricavoBudgetTotale)}</td>
+                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.costoBudgetTotaleEAC)}</td>
+                        <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${utils.formatCurrency(metrics.costoStimaAFinireETC)}</td>
+                        <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${metrics.oreStimaAFinireETC.toFixed(2)}</td>
+                        <td class="px-2 py-3 text-center text-xs">${metrics.percentualeAvanzamentoCosti.toFixed(2)}%</td>
+                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.ricavoMaturato)}</td>
+                        <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.etcRevenue)}</td>
                         <td class="px-2 py-3 text-center">
                           <div class="flex items-center justify-center gap-1">
                             <button data-action="edit" data-id="${margine.id}" class="text-blue-600 hover:text-blue-800" title="Modifica">
@@ -438,41 +426,29 @@ function renderMarginiTableCorpo(commessaId, bodyEl, alertContainer) {
 
     bodyEl.innerHTML = marginiCommessa
       .map((margine) => {
-        const costoConsCum = margine.costoConsuntivi;
-        const ggDaFare = margine.ggDaFare || 0;
+        const commessa = state.dati.commesse.find((c) => c.id === commessaId);
+        const metrics = calcService.getForecastMetrics(margine, commessa);
 
-        const costoMedioOrarioUsato = margine.costoMedioHH > 0 ? margine.costoMedioHH : calcService.calcolaCostoMedioOrarioBudget(commessaId);
-        const isFromBudget = !(margine.costoMedioHH > 0);
-
-        if (costoMedioOrarioUsato === 0) {
-          // Non possiamo calcolare nulla se non abbiamo un costo orario
-          return `<tr><td colspan="11" class="text-center text-xs text-red-600 p-2">Impossibile calcolare il forecast per ${margine.mese} perché il costo medio orario non è disponibile (né inserito, né calcolabile dal budget).</td></tr>`;
+        if (metrics.error) {
+          return `<tr><td colspan="12" class="text-center text-xs text-red-600 p-2">Impossibile calcolare il forecast per ${margine.mese}: ${metrics.error}</td></tr>`;
         }
-
-        const hhDaFare = ggDaFare * 8;
-        const costoETC = hhDaFare * costoMedioOrarioUsato;
-        const costoTotaleEAC = costoETC + costoConsCum;
-        const marginePerc = ricavoTotaleBudget > 0 ? ((ricavoTotaleBudget - costoTotaleEAC) / ricavoTotaleBudget) * 100 : 0;
-        const percentualeAvanzamento = costoTotaleEAC > 0 ? (costoConsCum / costoTotaleEAC) * 100 : 0;
-        const ricavoMaturato = ricavoTotaleBudget * (percentualeAvanzamento / 100);
-        const etcRevenue = ricavoTotaleBudget - ricavoMaturato;
 
         return `
           <tr class="hover:bg-gray-50">
               <td class="px-3 py-3 font-medium text-xs whitespace-nowrap">${margine.mese}</td>
-              <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${utils.formatCurrency(costoConsCum)}</td>
-              <td class="px-2 py-3 text-center text-xs">${ggDaFare}</td>
-              <td class="px-2 py-3 text-center text-xs" title="${isFromBudget ? 'Calcolato dal budget' : 'Inserito manualmente'}">
-                ${utils.formatCurrency(costoMedioOrarioUsato)}
-                ${isFromBudget ? '<span class="text-gray-400">*</span>' : ''}
+              <td class="px-2 py-3 text-center text-blue-600 font-bold text-xs">${utils.formatCurrency(metrics.costoConsCum)}</td>
+              <td class="px-2 py-3 text-center text-xs">${metrics.ggDaFare}</td>
+              <td class="px-2 py-3 text-center text-xs" title="${metrics.isCostoMedioFromBudget ? 'Calcolato dal budget' : 'Inserito manualmente'}">
+                ${utils.formatCurrency(metrics.costoMedioOrarioUsato)}
+                ${metrics.isCostoMedioFromBudget ? '<span class="text-gray-400">*</span>' : ''}
               </td>
-              <td class="px-2 py-3 text-center text-xs">${hhDaFare.toFixed(0)}</td>
-              <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${utils.formatCurrency(costoETC)}</td>
-              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(costoTotaleEAC)}</td>
-              <td class="px-2 py-3 text-center text-xs">${marginePerc.toFixed(2)}%</td>
-              <td class="px-2 py-3 text-center text-xs">${percentualeAvanzamento.toFixed(2)}%</td>
-              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(ricavoMaturato)}</td>
-              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(etcRevenue)}</td>
+              <td class="px-2 py-3 text-center text-xs">${metrics.hhDaFare.toFixed(0)}</td>
+              <td class="px-2 py-3 text-center text-xs bg-green-100 text-green-800 font-medium">${utils.formatCurrency(metrics.costoETC)}</td>
+              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.costoTotaleEAC)}</td>
+              <td class="px-2 py-3 text-center text-xs">${metrics.marginePerc.toFixed(2)}%</td>
+              <td class="px-2 py-3 text-center text-xs">${metrics.percentualeAvanzamento.toFixed(2)}%</td>
+              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.ricavoMaturato)}</td>
+              <td class="px-2 py-3 text-center text-xs">${utils.formatCurrency(metrics.etcRevenue)}</td>
               <td class="px-2 py-3 text-center">
                 <div class="flex items-center justify-center gap-1">
                   <button data-action="edit" data-id="${margine.id}" class="text-blue-600 hover:text-blue-800" title="Modifica">

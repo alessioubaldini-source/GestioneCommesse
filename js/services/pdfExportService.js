@@ -168,23 +168,59 @@ export function exportCommessaToPdf(commessaId) {
         }
         y = addSectionTitle(doc, 'Forecast Margini', y);
 
-        const marginiBody = margini.map((margine, index) => {
-          const prevMargine = index > 0 ? margini[index - 1] : null;
-          const costoMensile = prevMargine ? margine.costoConsuntivi - prevMargine.costoConsuntivi : margine.costoConsuntivi;
-          const ricavoConsuntivo = calc.calcolaMontanteFattureFinoAlMese(commessaId, margine.mese);
-          const marginePerc = ricavoConsuntivo > 0 ? ((ricavoConsuntivo - margine.costoConsuntivi) / ricavoConsuntivo) * 100 : 0;
-          const ricavoBudgetTotale = calc.calcolaTotaleBudgetRecent(commessaId);
-          const costoBudgetTotaleEAC = ricavoBudgetTotale * (1 - marginePerc / 100);
-          const costoStimaAFinireETC = costoBudgetTotaleEAC - margine.costoConsuntivi;
-          const percentualeAvanzamentoCosti = costoBudgetTotaleEAC > 0 ? (margine.costoConsuntivi / costoBudgetTotaleEAC) * 100 : 0;
-          const ricavoMaturato = ricavoBudgetTotale * (percentualeAvanzamentoCosti / 100);
+        let marginiHead, marginiBody;
 
-          return [margine.mese, formatCurrency(margine.costoConsuntivi), formatCurrency(costoMensile), `${marginePerc.toFixed(2)}%`, formatCurrency(costoStimaAFinireETC), `${percentualeAvanzamentoCosti.toFixed(2)}%`, formatCurrency(ricavoMaturato)];
-        });
+        if (commessa.tipologia === 'Corpo') {
+          marginiHead = [['Mese', 'Costo Cons. Cum.', 'GG da Fare', 'Costo Medio HH', 'Costo ETC', 'Costo EAC', 'Margine %', '% Avanz.']];
+          const ricavoBudgetTotale = calc.calcolaTotaleBudgetRecent(commessaId);
+          marginiBody = margini.map((margine) => {
+            const costoMedioOrario = margine.costoMedioHH > 0 ? margine.costoMedioHH : calc.calcolaCostoMedioOrarioBudget(commessaId);
+            const hhDaFare = (margine.ggDaFare || 0) * 8;
+            const costoETC = hhDaFare * costoMedioOrario;
+            const costoTotaleEAC = costoETC + margine.costoConsuntivi;
+            const marginePerc = ricavoBudgetTotale > 0 ? ((ricavoBudgetTotale - costoTotaleEAC) / ricavoBudgetTotale) * 100 : 0;
+            const percentualeAvanzamento = costoTotaleEAC > 0 ? (margine.costoConsuntivi / costoTotaleEAC) * 100 : 0;
+
+            return [
+              margine.mese,
+              formatCurrency(margine.costoConsuntivi),
+              margine.ggDaFare || 0,
+              formatCurrency(costoMedioOrario),
+              formatCurrency(costoETC),
+              formatCurrency(costoTotaleEAC),
+              `${marginePerc.toFixed(2)}%`,
+              `${percentualeAvanzamento.toFixed(2)}%`,
+            ];
+          });
+        } else {
+          // Logica per T&M e Canone
+          marginiHead = [['Mese', 'Costo Cons. Cum.', 'Costo Cons. Mensile', 'Margine %', 'Costo ETC', '% Avanz.', 'Ricavo Maturato']];
+          marginiBody = margini.map((margine, index) => {
+            const prevMargine = index > 0 ? margini[index - 1] : null;
+            const costoMensile = prevMargine ? margine.costoConsuntivi - prevMargine.costoConsuntivi : margine.costoConsuntivi;
+            const ricavoConsuntivo = calc.calcolaMontanteFattureFinoAlMese(commessaId, margine.mese);
+            const marginePerc = ricavoConsuntivo > 0 ? ((ricavoConsuntivo - margine.costoConsuntivi) / ricavoConsuntivo) * 100 : 0;
+            const ricavoBudgetTotale = calc.calcolaTotaleBudgetRecent(commessaId);
+            const costoBudgetTotaleEAC = ricavoBudgetTotale > 0 ? ricavoBudgetTotale * (1 - marginePerc / 100) : 0;
+            const costoStimaAFinireETC = costoBudgetTotaleEAC - margine.costoConsuntivi;
+            const percentualeAvanzamentoCosti = costoBudgetTotaleEAC > 0 ? (margine.costoConsuntivi / costoBudgetTotaleEAC) * 100 : 0;
+            const ricavoMaturato = ricavoBudgetTotale * (percentualeAvanzamentoCosti / 100);
+
+            return [
+              margine.mese,
+              formatCurrency(margine.costoConsuntivi),
+              formatCurrency(costoMensile),
+              `${marginePerc.toFixed(2)}%`,
+              formatCurrency(costoStimaAFinireETC),
+              `${percentualeAvanzamentoCosti.toFixed(2)}%`,
+              formatCurrency(ricavoMaturato),
+            ];
+          });
+        }
 
         doc.autoTable({
           startY: y,
-          head: [['Mese', 'Costo Cons. Cum.', 'Costo Cons. Mensile', 'Margine %', 'Costo ETC', '% Avanz.', 'Ricavo Maturato']],
+          head: marginiHead,
           body: marginiBody,
           theme: 'grid',
           headStyles: { fillColor: '#4299e1' },

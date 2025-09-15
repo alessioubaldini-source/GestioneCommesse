@@ -9,7 +9,6 @@ export const elements = {
   subContents: document.querySelectorAll('.sub-content'),
   totalRicavi: document.getElementById('total-ricavi'),
   totalCosti: document.getElementById('total-costi'),
-  totalMargine: document.getElementById('total-margine'),
   margineMedio: document.getElementById('margine-medio'),
   commesseAttive: document.getElementById('commesse-attive'),
   fatturatoMensile: document.getElementById('fatturato-mensile'),

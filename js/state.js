@@ -14,7 +14,6 @@ export const state = {
   },
   charts: {
     clientChart: null,
-    revenueChart: null,
     trendChart: null,
     budgetVsConsuntivoChart: null,
     marginiChart: null,

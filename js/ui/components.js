@@ -62,7 +62,6 @@ export function updateKPI() {
   const margineCard = document.getElementById('margine-kpi-card');
   const { sogliaMargineAttenzione, sogliaMargineCritico } = state.config;
 
-  margineCard.classList.remove('margin-ok', 'margin-warning', 'margin-critical'); // Rimuove le classi dinamiche per un colore più neutro
   if (marginePerc >= sogliaMargineAttenzione) {
     elements.margineTrend.textContent = '✅ Sopra soglia';
   } else if (marginePerc >= sogliaMargineCritico) {
@@ -113,6 +112,8 @@ export function updateKPI() {
 }
 
 export function updateCommesseMonitorate() {
+  if (!state.dati) return;
+
   const listContainer = document.getElementById('commesse-monitorate-list');
   const commesseDaMonitorare = [];
 
@@ -261,6 +262,8 @@ export function updateCurrentActivityPhase() {
 }
 
 export function updateCommessaHeader() {
+  if (!state.dati) return;
+
   if (!state.selectedCommessa) {
     elements.selectedCliente.textContent = '-';
     const tipologiaElement = document.getElementById('selected-tipologia');
@@ -315,6 +318,8 @@ export function updateCommessaHeader() {
 }
 
 export function updateCommessaSelect() {
+  if (!state.dati) return;
+
   const select = elements.commessaSelect;
 
   if (state.dati.commesse.length === 0) {
@@ -334,6 +339,8 @@ export function updateCommessaSelect() {
 }
 
 export function updateFilterOptions() {
+  if (!state.dati) return;
+
   // Update client filter
   const clients = [...new Set(state.dati.commesse.map((c) => c.cliente))];
   elements.clientFilter.innerHTML = '<option value="all">Tutti i clienti</option>' + clients.map((client) => `<option value="${client}">${client}</option>`).join('');

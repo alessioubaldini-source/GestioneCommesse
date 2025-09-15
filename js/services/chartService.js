@@ -1,7 +1,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { calcolaTotaleBudgetRecent, calcolaMarginRealeCommessa } from './calculationService.js';
+import { calcolaTotaleBudgetRecent } from './calculationService.js';
 
 export function getMonthlyTrendData(commesse) {
   const monthlyData = {};

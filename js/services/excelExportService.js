@@ -30,10 +30,10 @@ const excelStyles = {
     fill: { fgColor: { rgb: 'FFF0FFF4' } }, // Sfondo simile a green-100
     numFmt: '€ #,##0.00',
   },
-  highlight_green_bold_integer: {
+  highlight_green_bold_number_2dp: {
     font: { bold: true, color: { rgb: 'FF276749' } },
     fill: { fgColor: { rgb: 'FFF0FFF4' } },
-    numFmt: '0',
+    numFmt: '0.00',
   },
 
   // Formati numerici semplici

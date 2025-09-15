@@ -74,14 +74,6 @@ export function calcolaTotaleBudgetRecent(commessaId) {
   return details.reduce((sum, b) => sum + b.tariffa * b.giorni, 0);
 }
 
-export function calcolaMarginRealeCommessa(commessaId) {
-  const ricaviReali = calcolaMontanteFatture(commessaId);
-  const costiReali = state.dati.margini.filter((m) => m.commessaId === commessaId).reduce((sum, m) => sum + m.costoConsuntivi, 0);
-
-  if (ricaviReali === 0) return 0;
-  return ((ricaviReali - costiReali) / ricaviReali) * 100;
-}
-
 export function calcolaCostoMedioOrarioBudget(commessaId) {
   const budgetMasters = state.dati.budgetMaster?.filter((bm) => bm.commessaId === commessaId) || [];
   if (budgetMasters.length === 0) return 0;
@@ -184,6 +176,82 @@ export function calcolaMontanteFattureFinoAlMese(commessaId, mese) {
 }
 
 /**
+ * Calcola tutte le metriche derivate per un singolo record di forecast.
+ * Centralizza la logica di calcolo per T&M e Corpo.
+ * @param {object} margine Il record di margine/forecast.
+ * @param {object} commessa La commessa associata.
+ * @param {object} prevMargine Il record di margine del mese precedente (per calcoli delta).
+ * @returns {object} Un oggetto contenente tutte le metriche calcolate.
+ */
+export function getForecastMetrics(margine, commessa, prevMargine = null) {
+  const commessaId = commessa.id;
+
+  if (commessa.tipologia === 'Corpo') {
+    const ricavoTotaleBudget = calcolaTotaleBudgetRecent(commessaId);
+    const costoMedioOrarioUsato = margine.costoMedioHH > 0 ? margine.costoMedioHH : calcolaCostoMedioOrarioBudget(commessaId);
+    const isCostoMedioFromBudget = !(margine.costoMedioHH > 0);
+
+    if (costoMedioOrarioUsato === 0 && (margine.ggDaFare || 0) > 0) {
+      return { error: 'Costo medio orario non disponibile.' };
+    }
+
+    const ggDaFare = margine.ggDaFare || 0;
+    const hhDaFare = ggDaFare * 8;
+    const costoETC = hhDaFare * costoMedioOrarioUsato;
+    const costoTotaleEAC = costoETC + margine.costoConsuntivi;
+    const marginePerc = ricavoTotaleBudget > 0 ? ((ricavoTotaleBudget - costoTotaleEAC) / ricavoTotaleBudget) * 100 : 0;
+    const percentualeAvanzamento = costoTotaleEAC > 0 ? (margine.costoConsuntivi / costoTotaleEAC) * 100 : 0;
+    const ricavoMaturato = ricavoTotaleBudget * (percentualeAvanzamento / 100);
+    const etcRevenue = ricavoTotaleBudget - ricavoMaturato;
+
+    return {
+      costoConsCum: margine.costoConsuntivi,
+      ggDaFare,
+      costoMedioOrarioUsato,
+      isCostoMedioFromBudget,
+      hhDaFare,
+      costoETC,
+      costoTotaleEAC,
+      marginePerc,
+      percentualeAvanzamento,
+      ricavoMaturato,
+      etcRevenue,
+    };
+  } else {
+    // Logica per T&M e Canone
+    const costoMensile = prevMargine ? (margine.costoConsuntivi || 0) - (prevMargine.costoConsuntivi || 0) : margine.costoConsuntivi || 0;
+    const hhMensile = prevMargine ? (margine.hhConsuntivo || 0) - (prevMargine.hhConsuntivo || 0) : margine.hhConsuntivo || 0;
+    const ricavoConsuntivo = calcolaMontanteFattureFinoAlMese(commessaId, margine.mese);
+    const costoMedioHH = margine.hhConsuntivo > 0 ? margine.costoConsuntivi / margine.hhConsuntivo : 0;
+    const marginePerc = ricavoConsuntivo > 0 ? ((ricavoConsuntivo - margine.costoConsuntivi) / ricavoConsuntivo) * 100 : 0;
+    const ricavoBudgetTotale = calcolaTotaleBudgetRecent(commessaId);
+    const costoBudgetTotaleEAC = ricavoBudgetTotale > 0 ? ricavoBudgetTotale * (1 - marginePerc / 100) : 0;
+    const costoStimaAFinireETC = costoBudgetTotaleEAC > 0 ? costoBudgetTotaleEAC - margine.costoConsuntivi : 0;
+    const oreStimaAFinireETC = costoMedioHH > 0 ? costoStimaAFinireETC / costoMedioHH : 0;
+    const percentualeAvanzamentoCosti = costoBudgetTotaleEAC > 0 ? (margine.costoConsuntivi / costoBudgetTotaleEAC) * 100 : 0;
+    const ricavoMaturato = ricavoBudgetTotale * (percentualeAvanzamentoCosti / 100);
+    const etcRevenue = ricavoBudgetTotale - ricavoMaturato;
+
+    return {
+      costoConsCum: margine.costoConsuntivi,
+      costoMensile,
+      hhConsuntivo: margine.hhConsuntivo,
+      hhMensile,
+      costoMedioHH,
+      ricavoConsuntivo,
+      marginePerc,
+      ricavoBudgetTotale,
+      costoBudgetTotaleEAC,
+      costoStimaAFinireETC,
+      oreStimaAFinireETC,
+      percentualeAvanzamentoCosti,
+      ricavoMaturato,
+      etcRevenue,
+    };
+  }
+}
+
+/**
  * Returns a user-friendly description of a date range for tooltips.
  * @param {string} periodFilter - The filter that generated the range.
  * @param {Date} startDate - The start date of the period.
@@ -263,15 +331,20 @@ export function calculateKpisForPeriod(commesseIds, startDate, endDate) {
 
   const ricavi = state.dati.fatture.filter((f) => commesseIds.has(f.commessaId) && filterByDate(f)).reduce((acc, f) => acc + f.importo, 0);
 
+  // Ripristino logica corretta: i costi del periodo sono la somma dei costi *mensili* per i mesi che cadono nel periodo.
+  // Poiché i dati di forecast sono cumulativi, il costo mensile va calcolato come differenza dal mese precedente.
   let costi = 0;
   commesseIds.forEach((id) => {
-    const commessaMargini = state.dati.margini.filter((m) => m.commessaId === id).sort((a, b) => a.mese.localeCompare(b.mese)); // Sort ascending
+    // Prende tutti i forecast per la commessa, ordinati cronologicamente
+    const commessaMargini = state.dati.margini.filter((m) => m.commessaId === id).sort((a, b) => a.mese.localeCompare(b.mese));
 
     for (let i = 0; i < commessaMargini.length; i++) {
       const current = commessaMargini[i];
+      // Controlla se il record di forecast corrente rientra nel periodo selezionato
       if (filterByDate(current)) {
         const previous = commessaMargini[i - 1];
-        const monthlyCost = previous ? current.costoConsuntivi - previous.costoConsuntivi : current.costoConsuntivi;
+        // Il costo del mese è la differenza con il cumulativo precedente. Per il primo record, è il suo valore.
+        const monthlyCost = previous ? (current.costoConsuntivi || 0) - (previous.costoConsuntivi || 0) : current.costoConsuntivi || 0;
         costi += monthlyCost;
       }
     }
