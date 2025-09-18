@@ -52,6 +52,12 @@
         grid-template-columns: 60px 60px 1fr 120px 40px;
         gap: 0.75rem;
       }
+
+      /* Stili per il tooltip custom */
+      #custom-tooltip {
+        pointer-events: none; /* Evita che il tooltip stesso catturi eventi del mouse */
+        transition: opacity 0.2s;
+      }
     </style>
   </head>
   <body class="bg-gray-100 min-h-screen text-gray-800">
@@ -736,6 +742,11 @@
     <!-- Spinner Overlay -->
     <div id="spinner-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
       <div class="spinner"></div>
+    </div>
+
+    <!-- Custom Tooltip -->
+    <div id="custom-tooltip" class="hidden absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm">
+      <!-- Contenuto inserito da JS -->
     </div>
 
     <script src="js/main.js" type="module"></script>

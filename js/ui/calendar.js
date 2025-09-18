@@ -157,10 +157,14 @@ export function renderCalendar() {
       eventHTML = `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 ${dotColor} rounded-full"></div>`;
     }
 
-    // Il tooltip ora mostra solo gli eventi specifici del giorno (fatture, ordini, etc.)
-    const finalTooltip = eventTooltips.filter(Boolean).join(' | ');
+    // Costruisci il tooltip finale, includendo la regola di attività se presente
+    const tooltipParts = [...eventTooltips];
+    if (matchingRule && !isWeekend) {
+      tooltipParts.push(`Attività: ${matchingRule.description}`);
+    }
+    const finalTooltip = tooltipParts.filter(Boolean).join('&#10;');
 
-    calendarHTML += `<div class="${dayClasses}" ${finalTooltip ? `title="${finalTooltip}"` : ''}>${day}${eventHTML}</div>`;
+    calendarHTML += `<div class="${dayClasses}" ${finalTooltip ? `data-tooltip="${finalTooltip}"` : ''}>${day}${eventHTML}</div>`;
   }
 
   calendarHTML += `</div>`;
@@ -178,6 +182,36 @@ export function renderCalendar() {
   document.getElementById('next-month-btn')?.addEventListener('click', () => {
     state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() + 1);
     renderCalendar();
+  });
+
+  // --- Custom Tooltip Logic ---
+  const tooltipElement = document.getElementById('custom-tooltip');
+  if (!tooltipElement) return; // Safety check
+
+  const calendarGrid = elements.calendarContainer.querySelector('.grid.grid-cols-7');
+  if (!calendarGrid) return;
+
+  calendarGrid.addEventListener('mouseover', (e) => {
+    const dayCell = e.target.closest('[data-tooltip]');
+    if (dayCell && dayCell.dataset.tooltip) {
+      // Sostituisce il carattere a-capo (\n) con un tag <br> per il rendering HTML
+      const tooltipText = dayCell.dataset.tooltip.replace(/\n/g, '<br>');
+      tooltipElement.innerHTML = tooltipText;
+      tooltipElement.classList.remove('hidden');
+    }
+  });
+
+  calendarGrid.addEventListener('mousemove', (e) => {
+    // Muove il tooltip solo se è visibile
+    if (!tooltipElement.classList.contains('hidden')) {
+      // Posiziona il tooltip con un leggero offset rispetto al cursore
+      tooltipElement.style.left = `${e.pageX + 15}px`;
+      tooltipElement.style.top = `${e.pageY + 15}px`;
+    }
+  });
+
+  calendarGrid.addEventListener('mouseout', () => {
+    tooltipElement.classList.add('hidden');
   });
 }
 
