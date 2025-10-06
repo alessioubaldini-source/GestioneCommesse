@@ -322,18 +322,37 @@ export function updateCommessaSelect() {
 
   const select = elements.commessaSelect;
 
-  if (state.dati.commesse.length === 0) {
+  const commesse = [...state.dati.commesse];
+
+  if (commesse.length === 0) {
     select.innerHTML = '<option value="">Nessuna commessa disponibile</option>';
     state.selectedCommessa = null;
     return;
   }
 
-  const commessaExists = state.dati.commesse.some((c) => c.id === state.selectedCommessa);
+  // Sort commesse based on the sort-commesse dropdown
+  const sortValue = elements.sortCommesse.value;
+  const [key, direction] = sortValue.split('-');
+  const dir = direction === 'asc' ? 1 : -1;
+
+  commesse.sort((a, b) => {
+    let valA = a[key];
+    let valB = b[key];
+
+    if (typeof valA === 'string') {
+      return valA.localeCompare(valB) * dir;
+    } else {
+      // For dates or other non-string types
+      return (valA > valB ? 1 : -1) * dir;
+    }
+  });
+
+  const commessaExists = commesse.some((c) => c.id === state.selectedCommessa);
   if (!commessaExists) {
-    state.selectedCommessa = state.dati.commesse[0].id;
+    state.selectedCommessa = commesse[0].id;
   }
 
-  select.innerHTML = state.dati.commesse.map((c) => `<option value="${c.id}" title="${c.nome} - ${c.cliente}" ${c.id === state.selectedCommessa ? 'selected' : ''}>${c.nome} - ${c.cliente}</option>`).join('');
+  select.innerHTML = commesse.map((c) => `<option value="${c.id}" title="${c.nome} - ${c.cliente}" ${c.id === state.selectedCommessa ? 'selected' : ''}>${c.nome} - ${c.cliente}</option>`).join('');
 
   select.value = state.selectedCommessa;
 }
