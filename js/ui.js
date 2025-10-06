@@ -141,6 +141,11 @@ export function openModal(type, id = null) {
     modalContent.classList.add('max-w-md');
   }
 
+  // Get previous month for pre-filling date fields
+  const now = new Date();
+  now.setMonth(now.getMonth() - 1);
+  const prevMonthYYYYMM = now.toISOString().slice(0, 7);
+
   switch (type) {
     case 'configureRules':
       titleText = 'Configura Regole Calendario';
@@ -245,7 +250,7 @@ export function openModal(type, id = null) {
 
         fieldsHTML = `
                 <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Tipo di Inserimento</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo di Inserimento</label>
                   <div class="flex gap-4">
                       <label class="flex items-center"><input type="radio" name="budgetType" value="detail" class="mr-2" checked> Dettagliato</label>
                       <label class="flex items-center"><input type="radio" name="budgetType" value="total" class="mr-2"> Importo Totale</label>
@@ -254,7 +259,7 @@ export function openModal(type, id = null) {
 
                 <div id="new-budget-fields" class="hidden">
                   <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ID Nuovo Budget</label><input type="text" name="budgetId" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"></div>
-                  <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese Competenza</label><input type="month" name="meseCompetenza" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"></div>
+                  <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese Competenza</label><input type="month" name="meseCompetenza" value="${prevMonthYYYYMM}" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"></div>
                 </div>
 
                 <div id="budget-master-container">
@@ -294,7 +299,7 @@ export function openModal(type, id = null) {
     case 'fattura':
       titleText = id ? 'Modifica Fattura' : 'Nuova Fattura';
       fieldsHTML = `
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese Competenza</label><input type="month" name="meseCompetenza" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese Competenza</label><input type="month" name="meseCompetenza" value="${prevMonthYYYYMM}" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Invio Consuntivo</label><input type="date" name="dataInvioConsuntivo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Importo €</label><input type="number" step="0.01" name="importo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>`;
       break;
@@ -304,7 +309,7 @@ export function openModal(type, id = null) {
 
       if (commessa && commessa.tipologia === 'Corpo') {
         fieldsHTML = `
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese</label><input type="month" name="mese" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese</label><input type="month" name="mese" value="${prevMonthYYYYMM}" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Cons. Cum. €</label><input type="number" step="0.01" name="costoConsuntivi" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">GG da Fare</label><input type="number" step="0.01" name="ggDaFare" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Medio HH €</label><input type="number" step="0.01" name="costoMedioHH" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" placeholder="Default da budget" title="Se lasciato vuoto, verrà usato il costo medio orario del budget."></div>
@@ -312,7 +317,7 @@ export function openModal(type, id = null) {
       } else {
         // Default for T&M, Canone, etc.
         fieldsHTML = `
-              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese</label><input type="month" name="mese" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
+              <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mese</label><input type="month" name="mese" value="${prevMonthYYYYMM}" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Costo Consuntivi Cum. €</label><input type="number" step="0.01" name="costoConsuntivi" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
               <div class="mb-4"><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">HH Consuntivo Cum.</label><input type="number" step="0.01" name="hhConsuntivo" class="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" required></div>
             `;

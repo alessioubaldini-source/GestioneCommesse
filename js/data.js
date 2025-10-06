@@ -184,6 +184,13 @@ export function saveForm(formData) {
     // Logic for creating new record
     switch (currentModalType) {
       case 'commessa':
+        // Check for duplicate commessa name
+        const existingCommessa = state.dati.commesse.find((c) => c.nome.toLowerCase() === formData.nome.toLowerCase());
+        if (existingCommessa) {
+          showToast(`Esiste già una commessa con il nome "${formData.nome}".`, 'error');
+          return; // Stop saving
+        }
+
         const newCommessa = { id: generateId(state.dati.commesse), ...formData };
         state.dati.commesse.push(newCommessa);
         state.selectedCommessa = newCommessa.id;
@@ -191,6 +198,13 @@ export function saveForm(formData) {
       case 'budget':
         const budgetType = formData.budgetType;
         if (budgetType === 'total') {
+          // Check for duplicate budget master (total)
+          const existingTotalMaster = state.dati.budgetMaster?.find((bm) => bm.commessaId === selectedCommessa && bm.meseCompetenza === formData.meseCompetenza);
+          if (existingTotalMaster) {
+            showToast(`Esiste già un budget per il mese ${formData.meseCompetenza}.`, 'error');
+            return;
+          }
+
           // Create a new budget master with a total amount
           const newBudgetMaster = {
             id: generateId(state.dati.budgetMaster || []),
@@ -208,6 +222,13 @@ export function saveForm(formData) {
           const selectedMasterId = budgetMasterSelect ? budgetMasterSelect.value : null;
 
           if (selectedMasterId === 'new') {
+            // Check for duplicate budget master (detail)
+            const existingDetailMaster = state.dati.budgetMaster?.find((bm) => bm.commessaId === selectedCommessa && bm.meseCompetenza === formData.meseCompetenza);
+            if (existingDetailMaster) {
+              showToast(`Esiste già un budget per il mese ${formData.meseCompetenza}.`, 'error');
+              return;
+            }
+
             const newBudgetMaster = {
               id: generateId(state.dati.budgetMaster || []),
               commessaId: selectedCommessa,
@@ -236,14 +257,28 @@ export function saveForm(formData) {
         }
         break;
       case 'ordine':
+        // No specific duplicate check for 'ordine' based on month
         const newOrdine = { id: generateId(state.dati.ordini), commessaId: selectedCommessa, ...formData, importo: parseFloat(formData.importo) };
         state.dati.ordini.push(newOrdine);
         break;
       case 'fattura':
+        // Check for duplicate fattura
+        const existingFattura = state.dati.fatture.find((f) => f.commessaId === selectedCommessa && f.meseCompetenza === formData.meseCompetenza);
+        if (existingFattura) {
+          showToast(`Esiste già una fattura per il mese ${formData.meseCompetenza}.`, 'error');
+          return; // Stop saving
+        }
         const newFattura = { id: generateId(state.dati.fatture), commessaId: selectedCommessa, ...formData, importo: parseFloat(formData.importo) };
         state.dati.fatture.push(newFattura);
         break;
       case 'margine':
+        // Check for duplicate margine
+        const existingMargine = state.dati.margini.find((m) => m.commessaId === selectedCommessa && m.mese === formData.mese);
+        if (existingMargine) {
+          showToast(`Esiste già un forecast per il mese ${formData.mese}.`, 'error');
+          return; // Stop saving
+        }
+
         const newMargine = {
           id: generateId(state.dati.margini),
           commessaId: selectedCommessa,
