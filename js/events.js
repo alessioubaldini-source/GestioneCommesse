@@ -241,12 +241,14 @@ export function initEventListeners() {
     } else {
       const isEditing = state.editingId !== null;
 
-      data.saveForm(dataObject);
-      ui.closeModal();
-      ui.update();
+      const saveSuccess = data.saveForm(dataObject);
 
-      const successMessage = isEditing ? 'Modifiche salvate con successo!' : 'Elemento creato con successo!';
-      showToast(successMessage, 'success');
+      if (saveSuccess) {
+        ui.closeModal();
+        ui.update();
+        const successMessage = isEditing ? 'Modifiche salvate con successo!' : 'Elemento creato con successo!';
+        showToast(successMessage, 'success');
+      }
     }
   });
 

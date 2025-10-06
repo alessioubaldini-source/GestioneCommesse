@@ -101,6 +101,7 @@ export function saveData() {
   }
 }
 
+// Restituisce true se il salvataggio ha successo, altrimenti false.
 export function saveForm(formData) {
   const { editingId, currentModalType, selectedCommessa } = state;
 
@@ -188,7 +189,7 @@ export function saveForm(formData) {
         const existingCommessa = state.dati.commesse.find((c) => c.nome.toLowerCase() === formData.nome.toLowerCase());
         if (existingCommessa) {
           showToast(`Esiste già una commessa con il nome "${formData.nome}".`, 'error');
-          return; // Stop saving
+          return false; // Stop saving
         }
 
         const newCommessa = { id: generateId(state.dati.commesse), ...formData };
@@ -202,7 +203,7 @@ export function saveForm(formData) {
           const existingTotalMaster = state.dati.budgetMaster?.find((bm) => bm.commessaId === selectedCommessa && bm.meseCompetenza === formData.meseCompetenza);
           if (existingTotalMaster) {
             showToast(`Esiste già un budget per il mese ${formData.meseCompetenza}.`, 'error');
-            return;
+            return false;
           }
 
           // Create a new budget master with a total amount
@@ -226,7 +227,7 @@ export function saveForm(formData) {
             const existingDetailMaster = state.dati.budgetMaster?.find((bm) => bm.commessaId === selectedCommessa && bm.meseCompetenza === formData.meseCompetenza);
             if (existingDetailMaster) {
               showToast(`Esiste già un budget per il mese ${formData.meseCompetenza}.`, 'error');
-              return;
+              return false;
             }
 
             const newBudgetMaster = {
@@ -266,7 +267,7 @@ export function saveForm(formData) {
         const existingFattura = state.dati.fatture.find((f) => f.commessaId === selectedCommessa && f.meseCompetenza === formData.meseCompetenza);
         if (existingFattura) {
           showToast(`Esiste già una fattura per il mese ${formData.meseCompetenza}.`, 'error');
-          return; // Stop saving
+          return false; // Stop saving
         }
         const newFattura = { id: generateId(state.dati.fatture), commessaId: selectedCommessa, ...formData, importo: parseFloat(formData.importo) };
         state.dati.fatture.push(newFattura);
@@ -276,7 +277,7 @@ export function saveForm(formData) {
         const existingMargine = state.dati.margini.find((m) => m.commessaId === selectedCommessa && m.mese === formData.mese);
         if (existingMargine) {
           showToast(`Esiste già un forecast per il mese ${formData.mese}.`, 'error');
-          return; // Stop saving
+          return false; // Stop saving
         }
 
         const newMargine = {
@@ -294,6 +295,7 @@ export function saveForm(formData) {
   }
 
   saveData();
+  return true;
 }
 
 export function deleteRecord(type, id) {
