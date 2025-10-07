@@ -30,6 +30,7 @@ export const state = {
     sogliaMargineCritico: 30,
     sogliaMargineEccellente: 45,
     clientChartGroupBy: 'cliente', // Salva l'ultima selezione del grafico ricavi
+    sortCommesse: 'nome-asc', // Salva l'ordinamento delle commesse
     defaultFilters: {
       period: 'all',
       client: 'all',

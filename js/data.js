@@ -2,6 +2,7 @@
 
 import { showToast } from './notifications.js';
 import { state } from './state.js';
+import { elements } from './dom.js';
 import { generateId } from './utils.js';
 
 function loadConfig() {
@@ -24,6 +25,9 @@ function loadConfig() {
   state.filters.client = state.config.defaultFilters.client || 'all';
   state.filters.status = state.config.defaultFilters.status || 'all';
   state.filters.tipologia = state.config.defaultFilters.tipologia || 'all';
+
+  // Apply saved sort order
+  elements.sortCommesse.value = state.config.sortCommesse || 'nome-asc';
 }
 
 export function saveConfig() {

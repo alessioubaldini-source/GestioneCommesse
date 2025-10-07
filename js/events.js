@@ -55,7 +55,10 @@ export function initEventListeners() {
   });
 
   elements.sortCommesse.addEventListener('change', (e) => {
-    ui.sortCommesseTable(e.target.value);
+    const sortValue = e.target.value;
+    state.config.sortCommesse = sortValue;
+    data.saveConfig();
+    ui.sortCommesseTable(sortValue);
     ui.updateCommessaSelect();
   });
 

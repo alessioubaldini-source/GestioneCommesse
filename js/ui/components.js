@@ -122,7 +122,10 @@ export function updateCommesseMonitorate() {
 
   const filteredCommesse = calcService.getFilteredCommesse();
 
-  filteredCommesse.forEach((commessa) => {
+  // Considera solo le commesse attive o sospese per il monitoraggio
+  const commesseDaControllare = filteredCommesse.filter((c) => c.stato === 'Attivo' || c.stato === 'Sospeso');
+
+  commesseDaControllare.forEach((commessa) => {
     // Calcola entrambi i potenziali problemi
     const margineReale = calcService.calcolaMargineUltimoForecast(commessa.id);
     const haMargineBasso = margineReale !== null && margineReale < sogliaAttenzione;
@@ -322,6 +325,8 @@ export function updateCommessaSelect() {
 
   const select = elements.commessaSelect;
 
+  // L'array state.dati.commesse è già ordinato dalla funzione sortCommesseTable.
+  // Usiamo direttamente questo array per coerenza.
   const commesse = [...state.dati.commesse];
 
   if (commesse.length === 0) {
@@ -329,23 +334,6 @@ export function updateCommessaSelect() {
     state.selectedCommessa = null;
     return;
   }
-
-  // Sort commesse based on the sort-commesse dropdown
-  const sortValue = elements.sortCommesse.value;
-  const [key, direction] = sortValue.split('-');
-  const dir = direction === 'asc' ? 1 : -1;
-
-  commesse.sort((a, b) => {
-    let valA = a[key];
-    let valB = b[key];
-
-    if (typeof valA === 'string') {
-      return valA.localeCompare(valB) * dir;
-    } else {
-      // For dates or other non-string types
-      return (valA > valB ? 1 : -1) * dir;
-    }
-  });
 
   const commessaExists = commesse.some((c) => c.id === state.selectedCommessa);
   if (!commessaExists) {
