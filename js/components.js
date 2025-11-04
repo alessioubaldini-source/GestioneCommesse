@@ -71,44 +71,13 @@ export function updateKPI() {
     elements.margineTrend.textContent = '🚨 Critico';
   }
 
-  // --- TREND CALCULATION ---
-  const { startDate: prevStartDate, endDate: prevEndDate } = calcService.getPreviousPeriodDateRange(state.filters.period) || {};
-  let ricaviTrendHTML = 'N/A';
-  let costiTrendHTML = 'N/A';
-  let tooltipText = 'Nessun confronto per il periodo selezionato'; // Default tooltip
-
-  if (prevStartDate && prevEndDate) {
-    const prevPeriodDescription = calcService.getPeriodDescription(state.filters.period, prevStartDate, prevEndDate);
-    tooltipText = `Confronto con: ${prevPeriodDescription}`;
-
-    const prevKpis = calcService.calculateKpisForPeriod(allFilteredCommesseIds, prevStartDate, prevEndDate);
-
-    // Ricavi Trend
-    if (prevKpis.ricavi > 0) {
-      const ricaviPercChange = ((totalRicavi - prevKpis.ricavi) / prevKpis.ricavi) * 100;
-      const arrow = ricaviPercChange >= 0 ? '↗️' : '↘️';
-      ricaviTrendHTML = `${arrow} ${ricaviPercChange.toFixed(1)}% vs periodo prec.`;
-    } else if (totalRicavi > 0) {
-      ricaviTrendHTML = '↗️ N/A vs periodo prec.';
-    }
-
-    // Costi Trend
-    if (prevKpis.costi > 0) {
-      const costiPercChange = ((totalCosti - prevKpis.costi) / prevKpis.costi) * 100;
-      const arrow = costiPercChange >= 0 ? '↗️' : '↘️';
-      costiTrendHTML = `${arrow} ${costiPercChange.toFixed(1)}% vs periodo prec.`;
-    } else if (totalCosti > 0) {
-      costiTrendHTML = '↗️ N/A vs periodo prec.';
-    }
-  }
-
   if (elements.ricaviTrend) {
-    elements.ricaviTrend.textContent = ricaviTrendHTML;
-    elements.ricaviTrend.title = tooltipText;
+    elements.ricaviTrend.textContent = '';
+    elements.ricaviTrend.title = '';
   }
   if (elements.costiTrend) {
-    elements.costiTrend.textContent = costiTrendHTML;
-    elements.costiTrend.title = tooltipText;
+    elements.costiTrend.textContent = '';
+    elements.costiTrend.title = '';
   }
 }
 
