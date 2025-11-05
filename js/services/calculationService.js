@@ -1,6 +1,7 @@
 'use strict';
 
 import { state } from '../state.js';
+import { elements } from '../dom.js';
 
 export function getPeriodDateRange(periodFilter) {
   const now = new Date();
@@ -23,6 +24,13 @@ export function getPeriodDateRange(periodFilter) {
     case 'last-3-months':
       startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
       endDate = now;
+      break;
+    case 'custom-range':
+      const startDateInput = document.getElementById('start-date-filter');
+      const endDateInput = document.getElementById('end-date-filter');
+      startDate = startDateInput && startDateInput.value ? new Date(startDateInput.value) : null;
+      endDate = endDateInput && endDateInput.value ? new Date(endDateInput.value) : null;
+      if (endDate) endDate.setHours(23, 59, 59, 999); // Include the whole end day
       break;
     default:
       return { startDate: null, endDate: null };
@@ -273,6 +281,10 @@ export function getPeriodDescription(periodFilter, startDate, endDate) {
     case 'last-3-months':
       const endMonth3m = endDate.toLocaleString('it-IT', { month: 'long' });
       return `3 mesi da ${startMonth} a ${endMonth3m} ${startYear}`;
+    case 'custom-range':
+      const endMonthCustom = endDate.toLocaleString('it-IT', { month: 'long' });
+      const endYearCustom = endDate.getFullYear();
+      return `dal ${startDate.toLocaleDateString('it-IT')} al ${endDate.toLocaleDateString('it-IT')}`;
     default:
       return '';
   }

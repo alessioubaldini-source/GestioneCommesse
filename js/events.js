@@ -26,6 +26,24 @@ export function initEventListeners() {
     ui.applyFilters();
   });
 
+  // Add listeners for custom date range inputs
+  const startDateInput = document.getElementById('start-date-filter');
+  const endDateInput = document.getElementById('end-date-filter');
+
+  startDateInput.addEventListener('change', (e) => {
+    // Only apply if the custom range is active
+    if (state.filters.period === 'custom-range') {
+      ui.applyFilters();
+    }
+  });
+
+  endDateInput.addEventListener('change', (e) => {
+    // Only apply if the custom range is active
+    if (state.filters.period === 'custom-range') {
+      ui.applyFilters();
+    }
+  });
+
   elements.clientFilter.addEventListener('change', (e) => {
     state.pagination.commesse.currentPage = 1;
     state.filters.client = e.target.value;

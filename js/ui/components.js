@@ -327,6 +327,19 @@ export function updateFilterOptions() {
   elements.statusFilter.value = state.filters.status;
   document.getElementById('type-filter').value = state.filters.tipologia;
   elements.globalSearch.value = state.filters.search;
+
+  // Gestione abilitazione/disabilitazione filtri Dal/Al
+  const isCustomRange = state.filters.period === 'custom-range';
+  const startDateInput = document.getElementById('start-date-filter');
+  const endDateInput = document.getElementById('end-date-filter');
+
+  startDateInput.disabled = !isCustomRange;
+  endDateInput.disabled = !isCustomRange;
+
+  if (!isCustomRange) {
+    startDateInput.value = '';
+    endDateInput.value = '';
+  }
 }
 
 export function updateButtonStates() {
